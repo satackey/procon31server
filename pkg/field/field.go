@@ -185,7 +185,7 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 }
 
 // ActAgentsWithSaving はエージェントの行動を指定し、フィールドを変更します。ついでに保存します。
-func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*facilitator.UpdateAction) {
+func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.UpdateAction) {
 
 	// 行動を精査します
 	// もうやったのでIsValidは信用していいデータらしい。
@@ -222,7 +222,7 @@ func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*facilitator
 }
 
 // ActAgents はエージェントの行動を指定し、フィールドを変更します。
-func (f *Field) ActAgents(updateActions []*facilitator.UpdateAction) error {
+func (f *Field) ActAgents(updateActions []*apispec.UpdateAction) error {
 	// この座標を行動先に選んだエージェントの数
 	var DistinationCount [][]int
 	for i := 0; i < len(updateActions); i++ {
@@ -306,7 +306,7 @@ func (f Field) GetAgent(x, y int) (*Agent, error) {
 }
 
 // CheckIfAgentsInfoIsValid は行動情報全体が有効かどうか返します
-func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*facilitator.UpdateAction) bool {
+func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*apispec.UpdateAction) bool {
 	if len(f.Agents) != len(updateActions) {
 		// 送信されてきたデータ長が違う　出直してこい
 		return false
@@ -333,7 +333,7 @@ func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*facilitator.UpdateActi
 }
 
 // CheckIfAgentInfoIsValid は行動情報一つ一つが有効か判定します
-func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*facilitator.UpdateAction) (res []bool) {
+func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.UpdateAction) (res []bool) {
 	res = make([]bool, len(updateActions))
 
 	for index, updateAction := range updateActions {
