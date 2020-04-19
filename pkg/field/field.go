@@ -40,7 +40,7 @@ func New() *Field {
 }
 
 // InitField はフィールド情報を登録します
-func (f *Field) InitField(fieldStatus *facilitator.FieldStatus) {
+func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 	f.Width = fieldStatus.Width
 	f.Height = fieldStatus.Height
 
