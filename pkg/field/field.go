@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/golang-collections/collections/stack"
-	"github.com/strvworks/procon30/pkg/facilitator"
+	"github.com/satackey/procon31server/pkg/apispec"
 )
 
 // Field はフィールド情報を表します
