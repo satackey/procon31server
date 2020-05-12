@@ -4,7 +4,7 @@
 		"docker-compose.yml"
 	],
 	"service": "procon30",
-	"workspaceFolder": "/go/src/github.com/strvworks/procon30",
+	"workspaceFolder": "/go/src/github.com/satackey/procon31server",
 	"settings": {
 		"terminal.integrated.shell.linux": null,
 		"go.formatTool": "goimports",

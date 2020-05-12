@@ -6,7 +6,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ..:/go/src/github.com/strvworks/procon30
+      - ..:/go/src/github.com/satackey/procon31server
     cap_add:
       - SYS_PTRACE
     security_opt:

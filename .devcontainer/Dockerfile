@@ -3,22 +3,6 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
-# procon-server のダウンロード
-FROM ubuntu:18.04 AS download-env
-RUN apt-get update && apt-get install -y \
-    wget \
-    unzip
-
-WORKDIR /tmp
-RUN wget -qO procon_system.zip \
-    http://www.procon.gr.jp/wp-content/uploads//2019/07/17384674b1faad34f2166a5f56ef4a16.zip
-RUN unzip procon_system.zip -d unzipped_procon_system
-# RUN cp '\'$\'\\212\\310\\210\\325\\211\\361\\223\\232\\203\'\'V\'$\'\\203\'\'X\'$\'\\203\'\'e\'$\'\\203\\200\'/procon-server_linux /usr/local/bin/procon-server
-# RUN cp "''$'\212\310\210\325\211\361\223\232\203''V'$'\203''X'$'\203''e'$'\203\200'/procon-server_linux" /usr/local/bin/procon-server
-WORKDIR /tmp/unzipped_procon_system
-RUN cp -r $(ls)/procon-server_linux /usr/local/bin/procon-server
-RUN chmod +x /usr/local/bin/procon-server
-
 FROM golang:1
 
 # Avoid warnings by switching to noninteractive
@@ -87,4 +71,3 @@ RUN set -x \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=download-env /usr/local/bin/procon-server /usr/local/bin/
