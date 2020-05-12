@@ -2,11 +2,17 @@ package field
 
 // Cell はフィールドのますを表します
 type Cell struct {
-	Point   int
+	Point int
+	// 下の変数のいい名前は無いかな～
 	TiledBy int
-	x       int
-	y       int
-	field   *Field
+	// state + IDで、どのチームのどんなマスか
+	status string
+	teamID int
+	// というのはどうかしら？
+
+	x     int
+	y     int
+	field *Field
 }
 
 func newCell(point int, tiledBy int, x int, y int, field *Field) *Cell {

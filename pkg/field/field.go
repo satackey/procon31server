@@ -27,6 +27,8 @@ type AgentActionHistory struct {
 	AgentID int
 	DX      int
 	DY      int
+	X       int
+	Y       int
 	Type    string
 	turn    int
 	apply   int
@@ -289,7 +291,6 @@ func (f Field) GetFieldEasyToSee() [][]string {
 			}
 		}
 	}
-
 	return resField
 }
 

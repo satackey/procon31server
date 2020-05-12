@@ -61,6 +61,8 @@ type UpdateAction struct {
 	DX      int    `json:"dx"`
 	DY      int    `json:"dy"`
 	Type    string `json:"type"`
+	X       int    `json:"x"`
+	Y       int    `json:"y"`
 }
 
 // Ping は 動作確認 をします
