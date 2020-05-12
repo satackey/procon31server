@@ -200,7 +200,7 @@ func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.Upd
 		}
 	}
 	// セルに保存された回数が1回なら、実行できます(Apply:1)
-	apply := 1
+	Apply := 1
 	for i, updateAction := range updateActions {
 		if IsValid[i] == false {
 			var slise []AgentActionHistory
