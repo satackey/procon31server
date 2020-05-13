@@ -20,9 +20,15 @@ type FieldStatus struct {
 	Points            [][]int             `json:"points"`
 	StartedAtUnixtime int64               `json:"startedAtUnixTime"`
 	Turn              int                 `json:"turn"`
-	Tiled             [][]int             `json:"tiled"`
+	Cells             [][]Cell            
 	Teams             []Team              `json:"teams"`
 	Actions           []FieldStatusAction `json:"actions"`
+}
+
+// Cell は セルの情報 を表します
+type Cell struct {
+	Status string 
+	TeamID int    
 }
 
 // Team は team情報 を表します

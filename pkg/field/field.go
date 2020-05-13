@@ -50,7 +50,7 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 	for y, fieldRow := range fieldStatus.Points {
 		f.Cells[y] = make([]*Cell, f.Width)
 		for x, fieldColumn := range fieldRow {
-			cell := newCell(fieldColumn, fieldStatus.Tiled[y][x], x, y, f)
+			cell := newCell(fieldColumn, fieldStatus.Cells[y][x].TeamID, fieldStatus.Cells[y][x].Status, x, y, f)
 			f.Cells[y][x] = cell
 		}
 	}
