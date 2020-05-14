@@ -186,28 +186,41 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 	return Sum
 }
 
-// ActAgentsWithSaving はエージェントの行動を指定し、フィールドを変更します。ついでに保存します。
-func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.UpdateAction) {
+// 各セルが行動先に選ばれた回数を返す
+func (f *Field) CelSelectedTimesCount(IsValid []bool, updateActions []*apispec.UpdateAction) [][]int {
+	var DistinationCount [][]int
+
+	for i, updateAction := range updateActions {
+		// todo: put にも対応させたい
+		if IsValid[i] == true {
+			x := f.Agents[updateAction.AgentID].X + updateAction.DX
+			y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+			DistinationCount[x][y]++
+		}
+	}
+
+	return DistinationCount
+}
+
+// ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
+func (f *Field) ActAgents(IsValid []bool, updateActions []*apispec.UpdateAction) {
 
 	// 行動を精査します
 	// もうやったのでIsValidは信用していいデータらしい。
 
 	// セルが行動先に選ばれた回数をカウントします
-	// var DistinationCount [][]int
-	// for i, updateAction := range updateActions {
-	// 	if IsValid[i] == true {
-	// 		x := f.Agents[updateAction.AgentID].X + updateAction.DX
-	// 		y := f.Agents[updateAction.AgentID].Y + updateAction.DY
-	// 		DistinationCount[x][y]++
-	// 	}
-	// }
-	// // セルに保存された回数が1回なら、実行できます(Apply:1)
-	// // Apply := 1
+	var DistinationCount [][]int
+	DistinationCount := CelSelectedTimesCount(IsValid, updateActions)
+
+	// 一時的にコメントアウト
+
+	// セルに保存された回数が1回なら、実行できます(Apply:1)
+	// Apply := 1
 	// for i, updateAction := range updateActions {
 	// 	if IsValid[i] == false {
 	// 		var slise []AgentActionHistory
 	// 		f.ActionHistories[i].AgentActionHistories = append(f.ActionHistories[i].AgentActionHistories, slise...) // sliseの中身を追加する
-	// 		// Apply = -1
+	// 		Apply = -1
 	// 		// f.Turn
 	// 		continue
 	// 	}
@@ -221,56 +234,53 @@ func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.Upd
 	// 		Apply = 0
 	// 	}
 	// }
+
+	// DistinationCount と IsValid に基づいて apply が決定
+	// []AgentActionHistoryつくる
+	// 各updateActionに対して
+	// 	   updateaction -> []AgentActionHistry に変換して代入
+	//     apply == 1 なら実際に動かす
+	// f.ActionHistories[i].AgentActionHistories につくったやつを append
 }
+
+
+// 旧ActAgents (削除予定)
 
 // ActAgents はエージェントの行動を指定し、フィールドを変更します。
-func (f *Field) ActAgents(updateActions []*apispec.UpdateAction) error {
-	// この座標を行動先に選んだエージェントの数
-	var DistinationCount [][]int
-	for i := 0; i < len(updateActions); i++ {
-		for j := 0; j < len(f.Agents); j++ {
-			if updateActions[i].AgentID == f.Agents[j].ID {
-				x := updateActions[i].DX + f.Agents[j].X
-				y := updateActions[i].DY + f.Agents[j].Y
-				if x < 0 || x >= f.Width || y < 0 || y >= f.Height {
-					var err error
-					return err
-				}
-				DistinationCount[y][x]++
-				break
-			}
-		}
-	}
-	for i := 0; i < len(updateActions); i++ {
-		for j := 0; j < len(f.Agents); j++ {
-			if updateActions[i].AgentID == f.Agents[j].ID {
-				x := updateActions[i].DX + f.Agents[j].X
-				y := updateActions[i].DY + f.Agents[j].Y
-				if DistinationCount[y][x] == 1 {
-					// 動かす
-					if updateActions[i].Type == "move" {
-						if f.Cells[y][x].TiledBy != updateActions[i].AgentID && f.Cells[y][x].TiledBy != 0 {
-							continue
-						}
-						f.Cells[y][x].TiledBy = updateActions[i].AgentID
-						f.Agents[j].X += updateActions[i].DX
-						f.Agents[j].Y += updateActions[i].DY
-					} else if updateActions[i].Type == "remove" {
-						if f.Cells[y][x].TiledBy == updateActions[i].AgentID || f.Cells[y][x].TiledBy == 0 {
-							continue
-						}
-						f.Cells[y][x].TiledBy = updateActions[i].AgentID
-					} else if updateActions[i].Type == "stay" {
-						continue
-					}
-				}
-			}
-		}
-	}
+// func (f *Field) ActAgents(updateActions []*apispec.UpdateAction) error {
+// 	// この座標を行動先に選んだエージェントの数
+// 	var DistinationCount [][]int
 
-	// 範囲外にアクセスしようとしたとき err(error型) を返すようにしてほしい
-	return nil
-}
+// 	for i := 0; i < len(updateActions); i++ {
+// 		for j := 0; j < len(f.Agents); j++ {
+// 			if updateActions[i].AgentID == f.Agents[j].ID {
+// 				x := updateActions[i].DX + f.Agents[j].X
+// 				y := updateActions[i].DY + f.Agents[j].Y
+// 				if DistinationCount[y][x] == 1 {
+// 					// 動かす
+// 					if updateActions[i].Type == "move" {
+// 						if f.Cells[y][x].TiledBy != updateActions[i].AgentID && f.Cells[y][x].TiledBy != 0 {
+// 							continue
+// 						}
+// 						f.Cells[y][x].TiledBy = updateActions[i].AgentID
+// 						f.Agents[j].X += updateActions[i].DX
+// 						f.Agents[j].Y += updateActions[i].DY
+// 					} else if updateActions[i].Type == "remove" {
+// 						if f.Cells[y][x].TiledBy == updateActions[i].AgentID || f.Cells[y][x].TiledBy == 0 {
+// 							continue
+// 						}
+// 						f.Cells[y][x].TiledBy = updateActions[i].AgentID
+// 					} else if updateActions[i].Type == "stay" {
+// 						continue
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// 範囲外にアクセスしようとしたとき err(error型) を返すようにしてほしい
+// 	return nil
+// }
 
 // GetFieldEasyToSee は見やすいフィールド情報を返します
 func (f Field) GetFieldEasyToSee() [][]string {
