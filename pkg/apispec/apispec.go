@@ -20,7 +20,7 @@ type FieldStatus struct {
 	Points            [][]int             `json:"points"`
 	StartedAtUnixtime int64               `json:"startedAtUnixTime"`
 	Turn              int                 `json:"turn"`
-	Cells             [][]Cell            
+	Cells             [][]Cell            `json:"cell"`
 	Teams             []Team              `json:"teams"`
 	Actions           []FieldStatusAction `json:"actions"`
 }
