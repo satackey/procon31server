@@ -186,8 +186,8 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 	return Sum
 }
 
-// 各セルが行動先に選ばれた回数を返す
-func (f *Field) CelSelectedTimesCount(IsValid []bool, updateActions []*apispec.UpdateAction) [][]int {
+// CellSelectedTimesCount は各セルが行動先に選ばれた回数を返します
+func (f *Field) CellSelectedTimesCount(IsValid []bool, updateActions []*apispec.UpdateAction) [][]int {
 	var DistinationCount [][]int
 
 	for i, updateAction := range updateActions {
@@ -209,8 +209,7 @@ func (f *Field) ActAgents(IsValid []bool, updateActions []*apispec.UpdateAction)
 	// もうやったのでIsValidは信用していいデータらしい。
 
 	// セルが行動先に選ばれた回数をカウントします
-	var DistinationCount [][]int
-	DistinationCount := CelSelectedTimesCount(IsValid, updateActions)
+	DistinationCount := f.CellSelectedTimesCount(IsValid, updateActions)
 
 	// 一時的にコメントアウト
 

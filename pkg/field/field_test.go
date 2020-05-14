@@ -5,7 +5,7 @@ import (
 )
 
 func TestCelSelectedTimesCount(t *testing.T) {
-	result := CelSelectedTimesCount(hoge)
+	result := CellSelectedTimesCount(hoge)
 	expext := fugafuga
 	if result != expext {
 		t.Error("\nresult: ", result, "\nexpext: ", expext)
