@@ -27,6 +27,8 @@ type AgentActionHistory struct {
 	AgentID int
 	DX      int
 	DY      int
+	X       int
+	Y       int
 	Type    string
 	turn    int
 	apply   int
@@ -48,7 +50,7 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 	for y, fieldRow := range fieldStatus.Points {
 		f.Cells[y] = make([]*Cell, f.Width)
 		for x, fieldColumn := range fieldRow {
-			cell := newCell(fieldColumn, fieldStatus.Tiled[y][x], x, y, f)
+			cell := newCell(fieldColumn, fieldStatus.Cells[y][x].TeamID, fieldStatus.Cells[y][x].Status, x, y, f)
 			f.Cells[y][x] = cell
 		}
 	}
@@ -200,7 +202,7 @@ func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.Upd
 		}
 	}
 	// セルに保存された回数が1回なら、実行できます(Apply:1)
-	apply := 1
+	Apply := 1
 	for i, updateAction := range updateActions {
 		if IsValid[i] == false {
 			var slise []AgentActionHistory
@@ -289,7 +291,6 @@ func (f Field) GetFieldEasyToSee() [][]string {
 			}
 		}
 	}
-
 	return resField
 }
 

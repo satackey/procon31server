@@ -20,9 +20,15 @@ type FieldStatus struct {
 	Points            [][]int             `json:"points"`
 	StartedAtUnixtime int64               `json:"startedAtUnixTime"`
 	Turn              int                 `json:"turn"`
-	Tiled             [][]int             `json:"tiled"`
+	Cells             [][]Cell            `json:"cell"`
 	Teams             []Team              `json:"teams"`
 	Actions           []FieldStatusAction `json:"actions"`
+}
+
+// Cell は セルの情報 を表します
+type Cell struct {
+	Status string 
+	TeamID int    
 }
 
 // Team は team情報 を表します
@@ -61,6 +67,8 @@ type UpdateAction struct {
 	DX      int    `json:"dx"`
 	DY      int    `json:"dy"`
 	Type    string `json:"type"`
+	X       int    `json:"x"`
+	Y       int    `json:"y"`
 }
 
 // Ping は 動作確認 をします
