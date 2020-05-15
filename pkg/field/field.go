@@ -30,8 +30,8 @@ type AgentActionHistory struct {
 	X       int
 	Y       int
 	Type    string
-	turn    int
-	apply   int
+	Turn    int
+	Apply   int
 }
 
 // New は初期化された Field を返します
@@ -211,15 +211,36 @@ func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.
 func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, distinationCount [][]int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
-		// DX      
-		// DY      
-		// X       
-		// Y       
-		Type:    updateAction.Type 
-		// ↓??
-		// turn:    
-		apply:   1
+		Type:    updateAction.Type,
+		Turn:    f.Turn,
 	}
+
+	if updateAction.Type == "put" {
+		agentActionHistory.X = updateAction.X
+		agentActionHistory.Y = updateAction.Y
+	} else {
+		agentActionHistory.DX = updateAction.DX
+		agentActionHistory.DY = updateAction.DY
+	}
+
+	if isValid == true {
+		var x, y int
+		if updateAction.Type == "put" {
+			x = updateAction.X
+			y = updateAction.Y
+		} else {
+			x = f.Agents[updateAction.AgentID].X + updateAction.DX
+			y = f.Agents[updateAction.AgentID].Y + updateAction.DY
+		}
+		if distinationCount[y][x] == 1 {
+			agentActionHistory.Apply = 1
+		} else {
+			agentActionHistory.Apply = 0
+		}
+	} else {
+		agentActionHistory.Apply = -1
+	}
+
 	return agentActionHistory
 }
 
