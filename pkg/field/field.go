@@ -187,11 +187,11 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 }
 
 // CellSelectedTimesCount は各セルが行動先に選ばれた回数を返します
-func (f *Field) CellSelectedTimesCount(IsValid []bool, updateActions []*apispec.UpdateAction) [][]int {
-	var DistinationCount [][]int
+func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.UpdateAction) [][]int {
+	var distinationCount [][]int
 
 	for i, updateAction := range updateActions {
-		if IsValid[i] == true {
+		if isValid[i] == true {
 			var x, y int
 			if updateActions[i].Type == "put" {
 				x = updateAction.X
@@ -200,21 +200,37 @@ func (f *Field) CellSelectedTimesCount(IsValid []bool, updateActions []*apispec.
 				x = f.Agents[updateAction.AgentID].X + updateAction.DX
 				y = f.Agents[updateAction.AgentID].Y + updateAction.DY
 			}
-			DistinationCount[x][y]++
+			distinationCount[x][y]++
 		}
 	}
 
-	return DistinationCount
+	return distinationCount
+}
+
+// ConvertIntoHistory は エージェント1体の行動情報を、行動履歴に変換します。
+func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, distinationCount [][]int) AgentActionHistory {
+	agentActionHistory := AgentActionHistory{
+		AgentID: updateAction.AgentID,
+		// DX      
+		// DY      
+		// X       
+		// Y       
+		Type:    updateAction.Type 
+		// ↓??
+		// turn:    
+		apply:   1
+	}
+	return agentActionHistory
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
-func (f *Field) ActAgents(IsValid []bool, updateActions []*apispec.UpdateAction) {
+func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction) {
 
 	// 行動を精査します
 	// もうやったのでIsValidは信用していいデータらしい。
 
 	// セルが行動先に選ばれた回数をカウントします
-	DistinationCount := f.CellSelectedTimesCount(IsValid, updateActions)
+	distinationCount := f.CellSelectedTimesCount(isValid, updateActions)
 
 	// 一時的にコメントアウト
 
@@ -241,9 +257,13 @@ func (f *Field) ActAgents(IsValid []bool, updateActions []*apispec.UpdateAction)
 
 	// DistinationCount と IsValid に基づいて apply が決定
 	// []AgentActionHistoryつくる
+	var agentActionHistory []AgentActionHistory
 	// 各updateActionに対して
-	// 	   updateaction -> []AgentActionHistry に変換して代入
-	//     apply == 1 なら実際に動かす
+	for i, updateAction := range updateActions {
+		// updateaction -> []AgentActionHistry に変換して代入
+		agentActionHistory[i] = f.ConvertIntoHistory(isValid[i], updateAction, distinationCount)
+		// apply == 1 なら実際に動かす
+	}
 	// f.ActionHistories[i].AgentActionHistories につくったやつを append
 }
 
