@@ -191,10 +191,15 @@ func (f *Field) CellSelectedTimesCount(IsValid []bool, updateActions []*apispec.
 	var DistinationCount [][]int
 
 	for i, updateAction := range updateActions {
-		// todo: put にも対応させたい
 		if IsValid[i] == true {
-			x := f.Agents[updateAction.AgentID].X + updateAction.DX
-			y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+			var x, y int
+			if updateActions[i].Type == "put" {
+				x = updateAction.X
+				y = updateAction.Y
+			} else {
+				x = f.Agents[updateAction.AgentID].X + updateAction.DX
+				y = f.Agents[updateAction.AgentID].Y + updateAction.DY
+			}
 			DistinationCount[x][y]++
 		}
 	}
