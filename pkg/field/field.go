@@ -111,9 +111,9 @@ func (f *Field) SearchTiledBy(x, y int) int {
 }
 
 //左上から調べていく…？
-//外側でも探索してNGなマスをみつけておく
+//外側でも探索してNGなセルをみつけておく
 //エリア　中身囲まれている
-//たいる　自陣のマス
+//たいる　自陣のセル
 func (f *Field) CalcAreaPoint(teamID int) int {
 	Sum := 0
 
@@ -126,8 +126,8 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 
 	for y, fieldRow := range f.Cells {
 		for x, cell := range fieldRow {
-			IsAreaPoint := true // 今見ている連結成分がエリアポイントかどうか。falseになった時点でどこかのマスが外側のマスである
-			SumKari := 0        // 今見ているマスを含む連結成分のPointの合計値を保存する変数
+			IsAreaPoint := true // 今見ている連結成分がエリアポイントかどうか。falseになった時点でどこかのセルが外側のセルである
+			SumKari := 0        // 今見ているセルを含む連結成分のPointの合計値を保存する変数
 
 			if cell.TiledBy == teamID {
 				//タイルが自陣か否か
@@ -244,6 +244,10 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 	return agentActionHistory
 }
 
+func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
+
+}
+
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
 func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction) {
 
@@ -252,6 +256,11 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 
 	// セルが行動先に選ばれた回数をカウントします
 	distinationCount := f.CellSelectedTimesCount(isValid, updateActions)
+	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
+	// 二重ループで実装できそう。
+	// 競合しているセルをqueueに突っ込む
+	// queueから出したセルを行動先に選んでいるセル
+
 
 	// 一時的にコメントアウト
 
@@ -277,15 +286,21 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// }
 
 	// DistinationCount と IsValid に基づいて apply が決定
+
 	// []AgentActionHistoryつくる
-	var agentActionHistory []AgentActionHistory
+	var agentActionHistories []AgentActionHistory
 	// 各updateActionに対して
 	for i, updateAction := range updateActions {
 		// updateaction -> []AgentActionHistry に変換して代入
-		agentActionHistory[i] = f.ConvertIntoHistory(isValid[i], updateAction, distinationCount)
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, distinationCount)
 		// apply == 1 なら実際に動かす
+		if agentActionHistories[i].Apply == 1 {
+			f.ActuallyActAgent(updateAction)
+		}
 	}
-	// f.ActionHistories[i].AgentActionHistories につくったやつを append
+	// f.ActionHistories[i].AgentActionHistories に agentActionHistories を代入
+	// 何番目？0-indexedかなどうかな
+	f.ActionHistories[0].AgentActionHistories = agentActionHistories
 }
 
 
@@ -392,45 +407,45 @@ func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*apispec.UpdateAction) 
 func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.UpdateAction) (res []bool) {
 	res = make([]bool, len(updateActions))
 
-	for index, _ := range updateActions {
-		// NextX := f.Agents[updateAction.AgentID].X + updateAction.DX
-		// NextY := f.Agents[updateAction.AgentID].Y + updateAction.DY
+	for index, updateAction := range updateActions {
+		NextX := f.Agents[updateAction.AgentID].X + updateAction.DX
+		NextY := f.Agents[updateAction.AgentID].Y + updateAction.DY
 
-		// if _, ok := f.Agents[updateAction.AgentID]; !ok {
-		// 	// 指定された AgentID は存在しない　想定外　論外
-		// 	res[index] = false
-		// 	continue
-		// } else if updateAction.DX != -1 || updateAction.DX != 0 || updateAction.DX != 1 {
-		// 	// DX の値が不正　瞬間移動はできない。
-		// 	res[index] = false
-		// 	continue
-		// } else if updateAction.DY != -1 || updateAction.DY != 0 || updateAction.DY != 1 {
-		// 	// DY の値が不正　瞬間移動はできない。
-		// 	res[index] = false
-		// 	continue
-		// } else if NextX < 0 || NextX >= f.Width || NextY < 0 || NextY >= f.Height {
-		// 	// 移動先に指定した場所は範囲外　異世界に飛ぶ気か？
-		// 	res[index] = false
-		// 	continue
-		// } else if updateAction.Type == "move" {
-		// 	if f.Cells[NextX][NextY].TiledBy != teamID && f.Cells[NextX][NextY].TiledBy != 0 {
-		// 		// 移動先に指定したマスに敵のタイルがあって動けない！！！
-		// 		res[index] = false
-		// 		continue
-		// 	}
-		// } else if updateAction.Type == "remove" {
-		// 	if f.Cells[NextX][NextY].TiledBy == teamID || f.Cells[NextX][NextY].TiledBy == 0 {
-		// 		// 移動先に指定したマスに敵のタイルはない！！！
-		// 		res[index] = false
-		// 		continue
-		// 	}
-		// } else if updateAction.Type == "stay" {
-		// 	// "stay" で衝突する場合はないので true
-		// } else {
-		// 	// upgateAction.Type の文字列が意味不明　そんなものは存在しない
-		// 	res[index] = false
-		// 	continue
-		// }
+		if _, ok := f.Agents[updateAction.AgentID]; !ok {
+			// 指定された AgentID は存在しない　想定外　論外
+			res[index] = false
+			continue
+		} else if updateAction.DX != -1 || updateAction.DX != 0 || updateAction.DX != 1 {
+			// DX の値が不正　瞬間移動はできない。
+			res[index] = false
+			continue
+		} else if updateAction.DY != -1 || updateAction.DY != 0 || updateAction.DY != 1 {
+			// DY の値が不正　瞬間移動はできない。
+			res[index] = false
+			continue
+		} else if NextX < 0 || NextX >= f.Width || NextY < 0 || NextY >= f.Height {
+			// 移動先に指定した場所は範囲外　異世界に飛ぶ気か？
+			res[index] = false
+			continue
+		} else if updateAction.Type == "move" {
+			if f.Cells[NextX][NextY].TiledBy != teamID && f.Cells[NextX][NextY].TiledBy != 0 {
+				// 移動先に指定したセルに敵のタイルがあって動けない！！！
+				res[index] = false
+				continue
+			}
+		} else if updateAction.Type == "remove" {
+			if f.Cells[NextX][NextY].TiledBy == teamID || f.Cells[NextX][NextY].TiledBy == 0 {
+				// 移動先に指定したセルに敵のタイルはない！！！
+				res[index] = false
+				continue
+			}
+		} else if updateAction.Type == "stay" {
+			// "stay" で衝突する場合はないので true
+		} else {
+			// upgateAction.Type の文字列が意味不明　そんなものは存在しない
+			res[index] = false
+			continue
+		}
 
 		// ここまで到達したデータに不正はないので true
 		res[index] = true
