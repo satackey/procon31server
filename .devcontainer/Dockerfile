@@ -8,10 +8,10 @@ FROM golang:1
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
-# This Dockerfile adds a non-root 'vscode' user with sudo access. However, for Linux,
-# this user's GID/UID must match your local user UID/GID to avoid permission issues
-# with bind mounts. Update USER_UID / USER_GID if yours is not 1000. See
-# https://aka.ms/vscode-remote/containers/non-root-user for details.
+# This Dockerfile adds a non-root user with sudo access. Use the "remoteUser"
+# property in devcontainer.json to use it. On Linux, the container user's GID/UIDs
+# will be updated to match your local UID/GID (when using the dockerFile property).
+# See https://aka.ms/vscode-remote/containers/non-root-user for details.
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
@@ -22,38 +22,47 @@ RUN set -x \
     && apt-get -y install --no-install-recommends apt-utils dialog 2>&1 \
     #
     # Verify git, process tools, lsb-release (common in install instructions for CLIs) installed
-    && apt-get -y install git iproute2 procps lsb-release \
+    && apt-get -y install git openssh-client less iproute2 procps lsb-release \
     #
-    # Install gocode-gomod
-    && go get -x -d github.com/stamblerre/gocode 2>&1 \
-    && go build -o gocode-gomod github.com/stamblerre/gocode \
-    && mv gocode-gomod $GOPATH/bin/ \
+    # Build Go tools w/module support
+    && mkdir -p /tmp/gotools \
+    && cd /tmp/gotools \
+    && GOPATH=/tmp/gotools GO111MODULE=on go get -v golang.org/x/tools/gopls@latest 2>&1 \
+    && GOPATH=/tmp/gotools GO111MODULE=on go get -v \
+        honnef.co/go/tools/...@latest \
+        golang.org/x/tools/cmd/gorename@latest \
+        golang.org/x/tools/cmd/goimports@latest \
+        golang.org/x/tools/cmd/guru@latest \
+        golang.org/x/lint/golint@latest \
+        github.com/mdempsky/gocode@latest \
+        github.com/cweill/gotests/...@latest \
+        github.com/haya14busa/goplay/cmd/goplay@latest \
+        github.com/sqs/goreturns@latest \
+        github.com/josharian/impl@latest \
+        github.com/davidrjenni/reftools/cmd/fillstruct@latest \
+        github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest  \
+        github.com/ramya-rao-a/go-outline@latest  \
+        github.com/acroca/go-symbols@latest  \
+        github.com/godoctor/godoctor@latest  \
+        github.com/rogpeppe/godef@latest  \
+        github.com/zmb3/gogetdoc@latest \
+        github.com/fatih/gomodifytags@latest  \
+        github.com/mgechev/revive@latest  \
+        github.com/go-delve/delve/cmd/dlv@latest 2>&1 \
+    #
+    # Build Go tools w/o module support
+    && GOPATH=/tmp/gotools go get -v github.com/alecthomas/gometalinter 2>&1 \
+    #
+    # Build gocode-gomod
+    && GOPATH=/tmp/gotools go get -x -d github.com/stamblerre/gocode 2>&1 \
+    && GOPATH=/tmp/gotools go build -o gocode-gomod github.com/stamblerre/gocode \
     #
     # Install Go tools
-    && go get -u -v \
-        github.com/mdempsky/gocode \
-        github.com/uudashr/gopkgs/cmd/gopkgs \
-        github.com/ramya-rao-a/go-outline \
-        github.com/acroca/go-symbols \
-        github.com/godoctor/godoctor \
-        golang.org/x/tools/cmd/guru \
-        golang.org/x/tools/cmd/gorename \
-        github.com/rogpeppe/godef \
-        github.com/zmb3/gogetdoc \
-        github.com/haya14busa/goplay/cmd/goplay \
-        github.com/sqs/goreturns \
-        github.com/josharian/impl \
-        github.com/davidrjenni/reftools/cmd/fillstruct \
-        github.com/fatih/gomodifytags \
-        github.com/cweill/gotests/... \
-        golang.org/x/tools/cmd/goimports \
-        golang.org/x/lint/golint \
-        golang.org/x/tools/cmd/gopls \
-        github.com/alecthomas/gometalinter \
-        honnef.co/go/tools/... \
-        github.com/golangci/golangci-lint/cmd/golangci-lint \
-        github.com/mgechev/revive \
-        github.com/derekparker/delve/cmd/dlv 2>&1 \
+    && mv /tmp/gotools/bin/* /usr/local/bin/ \
+    && mv gocode-gomod /usr/local/bin/ \
+    #
+    # Install golangci-lint
+    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin 2>&1 \
     #
     # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
     && groupadd --gid $USER_GID $USERNAME \
@@ -63,11 +72,16 @@ RUN set -x \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     #
-    # Install VS Live Share Dependencies
-    && wget -O ~/vsls-reqs https://aka.ms/vsls-linux-prereq-script && chmod +x ~/vsls-reqs && ~/vsls-reqs || exit 0 \
+    # Install VS Live Share dependencies
+    && curl -sSL https://aka.ms/vsls-linux-prereq-script | bash \
     #
     # Clean up
     && apt-get autoremove -y \
     && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/gotools
 
+# Update this to "on" or "off" as appropriate
+ENV GO111MODULE=auto
+
+# Switch back to dialog for any ad-hoc use of apt-get
+ENV DEBIAN_FRONTEND=dialog
