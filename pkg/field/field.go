@@ -244,8 +244,38 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 	return agentActionHistory
 }
 
+// ActuallyActAgent は マジで行動情報に基づいてフィールド情報を更新します
 func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
+	switch updateAction.Type {
+		case "move" :
+			f.ActMove(updateAction);
+		case "remove" :
+			f.ActRemove(updateAction);
+		case "stay" :
+			f.ActStay(updateAction);
+		case "put" :
+			f.ActPut(updateAction);
+	}
+}
 
+// ActMove は type = "move" のとき ActuallyActAgent により実行されます
+func (f *Field) ActMove(updateAction *apispec.UpdateAction) {
+
+}
+
+// ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
+func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
+	
+}
+
+// ActStay は type = "stay" のとき ActuallyActAgent により実行されます
+func (f *Field) ActStay(updateAction *apispec.UpdateAction) {
+	// 特に判定することもないよね？
+}
+
+// ActPut は type = "put" のとき ActuallyActAgent により実行されます
+func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
+	
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
