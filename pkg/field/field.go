@@ -260,17 +260,31 @@ func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
 
 // ActMove は type = "move" のとき ActuallyActAgent により実行されます
 func (f *Field) ActMove(updateAction *apispec.UpdateAction) {
-
+	// 移動先のx, y座標を取得する
+	x := f.Agents[updateAction.AgentID].X + updateAction.DX;
+	y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
+	// エージェントの座標を変える
+	f.Agents[updateAction.AgentID].X = x;
+	f.Agents[updateAction.AgentID].Y = y;
+	// 移動先の座標を自陣の城壁に変える
+	f.Cells[y][x].TiledBy = f.Agents[updateAction.AgentID].TeamID;
+	f.Cells[y][x].Status = "wall";
 }
 
 // ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
 func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
-	
+	// 移動先のx, y座標を取得する
+	x := f.Agents[updateAction.AgentID].X + updateAction.DX;
+	y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
+	// 城壁 (wall) を除去する、つまりfreeに…
+	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
+	// 後回し！！！！！！！！！！！！！
 }
 
 // ActStay は type = "stay" のとき ActuallyActAgent により実行されます
 func (f *Field) ActStay(updateAction *apispec.UpdateAction) {
-	// 特に判定することもないよね？
+	// 特に判定することもない
+	// Q.何故関数化した？ A.見栄えがいいから
 }
 
 // ActPut は type = "put" のとき ActuallyActAgent により実行されます

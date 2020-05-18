@@ -3,8 +3,10 @@ package field
 // Cell はフィールドのますを表します
 type Cell struct {
 	Point int
+	// TiledBy := そのセルのTeamID を表しているわ！AgentIDではないことに注意ね
 	TiledBy int
-	// TiledBy + Statusで、どのチームのどんなマスか
+	// TiledBy + Statusで、どのチームのどんなマスかがわかる ってわけ。
+	// Status := {"wall", "position", "free"} のどれかよ！ ほんっとアンタってどんくさいわね…
 	Status string
 	x     int
 	y     int
