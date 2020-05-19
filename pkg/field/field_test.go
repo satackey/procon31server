@@ -87,10 +87,10 @@ func TestCelSelectedTimesCount(t *testing.T) {
 		},
 	}
 	result := f.CellSelectedTimesCount(isValid, updateActions)
-	expext := [][]int{}
-	if result == expext {
+	expected := [][]int{}
+	if result == expected {
 		// errorを記録
-		// t.Error("\nresult: ", result, "\nexpext: ", expext)
+		// t.Error("\nresult: ", result, "\nexpected: ", expected)
 	}
 
 	t.Log("Test is finished!")
@@ -98,8 +98,8 @@ func TestCelSelectedTimesCount(t *testing.T) {
 
 func (f *Field) TestActAgents(t *testing.T) {
 	result := f.ActAgents(hoge)
-	expext := fuga
-	if result != expext {
+	expected := fuga
+	if result != expected {
 		// errorを記録
 	}
 	t.Log("Test is finished")
