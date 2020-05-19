@@ -6,7 +6,7 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
-func TestCelSelectedTimesCount(t *testing.T) {
+func TestCelSellectedTimesCount(t *testing.T) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
@@ -202,5 +202,10 @@ func TestCelSelectedTimesCount(t *testing.T) {
 		}
 	}
 
-	t.Log("Test is finished!")
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("The test is successful!!!")
+	}
+
+	t.Log("CellSelectedTimesCount() Test is finished.")
 }
