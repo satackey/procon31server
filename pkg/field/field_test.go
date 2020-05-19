@@ -170,11 +170,36 @@ func TestCelSelectedTimesCount(t *testing.T) {
 			Y:       0,
 		},
 	}
+
 	result := f.CellSelectedTimesCount(isValid, updateActions)
-	expected := [][]int{}
-	if result == expected {
-		// errorを記録
-		// t.Error("\nresult: ", result, "\nexpected: ", expected)
+	
+	expected := [][]int{
+		[]int{0, 0, 0, 0, 0},
+		[]int{2, 1, 0, 1, 0},
+		[]int{0, 1, 1, 0, 1},
+		[]int{0, 0, 1, 0, 0},
+		
+	}
+
+	// result の配列のサイズは正しいか？
+	if len(result) != len(expected) {
+		t.Fatalf("len(result): ", len(result), "\nlen(expected): ", len(expected))
+	}
+	for i := range result {
+		if len(result[i]) != len(expected[i]) {
+			t.Errorf("i: ", i, "\nlen(result[", i, "]): ", len(result[i]), "\nlen(expected[", i, "]): ", len(expected[i]))
+		}
+	}
+
+	// 各マスの数値は正しいか？
+	if t.Failed() == false {
+		for i, resultLine := range result {
+			for j := resultLine {
+				if result[i][j] != expected[i][j] {
+					t.Errorf("i: ", i, ", j: ", j, "\nresult[", i, "][", j, "]: ", result[i][j], "\nexpected[", i, "][", j, "]: ", expected[i][j])
+				}
+			}
+		}
 	}
 
 	t.Log("Test is finished!")
