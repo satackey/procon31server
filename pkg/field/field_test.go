@@ -18,17 +18,70 @@ func TestCelSelectedTimesCount(t *testing.T) {
 		
 	}
 	cells := [][]apispec.Cell{}
+	for i, cellLine := range cells {
+		for j := range cellLine {
+			cells[i][j].Status = "free"
+			cells[i][j].TeamID = 0
+		}
+	}
 	teams := []apispec.Team{
-		apispac.Team{
+		apispec.Team{
 			TeamID: 3,
-			Agents: []Agent{
-				ID: 303,
-				TeamID: 3,
-				X: 
-				Y:
-				field: &f,
-			}
+			Agents: []apispec.Agent{
+				apispec.Agent{
+					AgentID: 303,
+					X: 1,
+					Y: 0,
+				},
+				apispec.Agent{
+					AgentID: 304,
+					X: 1,
+					Y: 1,
+				},
+				apispec.Agent{
+					AgentID: 305,
+					X: 3,
+					Y: 1,
+				},
+				apispec.Agent{
+					AgentID: 306,
+					X: 0,
+					Y: 2,
+				},
+				
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
 		},
+		apispec.Team{
+			TeamID: 4,
+			Agents: []apispec.Agent{
+				apispec.Agent{
+					AgentID: 403,
+					X: 1,
+					Y: 2,
+				},
+				apispec.Agent{
+					AgentID: 404,
+					X: 2,
+					Y: 2,
+				},
+				apispec.Agent{
+					AgentID: 405,
+					X: 3,
+					Y: 2,
+				},
+				apispec.Agent{
+					AgentID: 406,
+					X: 2,
+					Y: 3,
+				},
+				
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
+		},
+		
 	}
 	actions := []apispec.FieldStatusAction{}
 
@@ -53,7 +106,23 @@ func TestCelSelectedTimesCount(t *testing.T) {
 
 	updateActions := []*apispec.UpdateAction{
 		&apispec.UpdateAction{
-			AgentID: 330,
+			AgentID: 303,
+			DX:      -1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		&apispec.UpdateAction{
+			AgentID: 304,
+			DX:      -1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		&apispec.UpdateAction{
+			AgentID: 305,
 			DX:      1,
 			DY:      1,
 			Type:    "move",
@@ -61,57 +130,41 @@ func TestCelSelectedTimesCount(t *testing.T) {
 			Y:       0,
 		},
 		&apispec.UpdateAction{
-			AgentID: 330,
+			AgentID: 306,
 			DX:      1,
+			DY:      -1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		&apispec.UpdateAction{
+			AgentID: 403,
+			DX:      1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		&apispec.UpdateAction{
+			AgentID: 404,
+			DX:      0,
 			DY:      1,
 			Type:    "move",
 			X:       0,
 			Y:       0,
 		},
 		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
+			AgentID: 405,
+			DX:      0,
+			DY:      -1,
 			Type:    "move",
 			X:       0,
 			Y:       0,
 		},
 		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		&apispec.UpdateAction{
-			AgentID: 330,
-			DX:      1,
-			DY:      1,
+			AgentID: 406,
+			DX:      -1,
+			DY:      -1,
 			Type:    "move",
 			X:       0,
 			Y:       0,
@@ -125,13 +178,4 @@ func TestCelSelectedTimesCount(t *testing.T) {
 	}
 
 	t.Log("Test is finished!")
-}
-
-func (f *Field) TestActAgents(t *testing.T) {
-	result := f.ActAgents(hoge)
-	expected := fuga
-	if result != expected {
-		// errorを記録
-	}
-	t.Log("Test is finished")
 }
