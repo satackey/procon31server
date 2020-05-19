@@ -35,7 +35,7 @@ type Cell struct {
 type Team struct {
 	TeamID    int     `json:"teamID"`
 	Agents    []Agent `json:"agents"`
-	TilePoint int     `json:"tilePoint"`
+	WallPoint int     `json:"wallPoint"`
 	AreaPoint int     `json:"areaPoint"`
 }
 
