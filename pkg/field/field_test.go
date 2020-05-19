@@ -9,14 +9,32 @@ import (
 func TestCelSelectedTimesCount(t *testing.T) {
 	f := New()
 
-	points := [][]int{}
+	// 本来は 12^2 以上 24^2 以下のサイズである
+	points := [][]int{
+		[]int{ 3,  2,  1,  0,  2},
+		[]int{-1, -3,  3,  1, -2},
+		[]int{ 3, -1,  1, -3,  3},
+		[]int{ 0, -2,  1,  2,  0},
+		
+	}
 	cells := [][]apispec.Cell{}
-	teams := []apispec.Team{}
+	teams := []apispec.Team{
+		apispac.Team{
+			TeamID: 3,
+			Agents: []Agent{
+				ID: 303,
+				TeamID: 3,
+				X: 
+				Y:
+				field: &f,
+			}
+		},
+	}
 	actions := []apispec.FieldStatusAction{}
 
 	fieldStatus := &apispec.FieldStatus{
-		Width:             4,
-		Height:            3,
+		Width:             5,
+		Height:            4,
 		Points:            points,
 		StartedAtUnixtime: 1576800000,
 		Turn:              0,
@@ -27,8 +45,21 @@ func TestCelSelectedTimesCount(t *testing.T) {
 
 	f.InitField(fieldStatus)
 
-	isValid := []bool{true, true, true, true, true, true, true}
+	agentCount := 8
+	isValid := make([]bool, agentCount)
+	for i := range isValid {
+		isValid[i] = true
+	}
+
 	updateActions := []*apispec.UpdateAction{
+		&apispec.UpdateAction{
+			AgentID: 330,
+			DX:      1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
 		&apispec.UpdateAction{
 			AgentID: 330,
 			DX:      1,
