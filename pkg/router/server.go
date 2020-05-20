@@ -3,13 +3,14 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"github.com/ant0ine/go-json-rest/rest"
 	"log"
 	"net/http"
     // "time"
 	// "../apisec/apisec.go"
 	"sync"
+	"strconv"
 )
 
 func main() {
@@ -30,13 +31,13 @@ func main() {
 	router, err := rest.MakeRouter(
 		rest.Get("/stream", StreamThings),
 		// rest.Get("/matches", MatchesThings),
-		rest.Get("/matches/:id", FieldStatus),
+		// rest.Get("/matches/:id", FieldStatus),
 		// rest.Get("/matches/:id", users.FieldStatus),
 		// rest.Post("/matches/:id/action", Action),s
 		rest.Get("/ping", PingsThings),
 
 
-		// rest.Get("/matches", GetAllMatch),s
+		rest.Get("/matches", GetAllMatch),
 
 		// 実際には降ってくるけど, 練習環境ではそれがないのでpostを用意しておく
 		// rest.Post("mathces", PostMatch),
@@ -44,7 +45,7 @@ func main() {
 		rest.Post("/matches", PostMatch),
 
 		// CRUDのC Post or Put
-		// rest.Get("/countries/:code", GetCountry),
+		rest.Get("/matches/:code", GetCountry),
 		// 必要かまだわからない
 		// rest.Delete("/countries/:code", DeleteCountry),
 
@@ -171,10 +172,21 @@ func FieldStatus(w rest.ResponseWriter, r *rest.Request) {
 type Country struct {
 	Code int `json:"code"`
 	Name string `json:"name"`
+	Hoge string `json:"fuga"`
 }
+
+// type Match struct {
+// 	ID             int    `json:"id"`
+// 	IntervalMillis int    `json:"intervalMillis"`
+// 	// MatchTo        string `json:"matchTo"`
+// 	// TeamID         int    `json:"teamID"`
+// 	// TurnMillis     int    `json:"turnMillis"`
+// 	// Turns          int    `json:"turns"`
+// }
 
 
 // var store = map[string]*Country{}
+var store = map[int]*Country{}
 // var store = []*Country{}
 
 var lock = sync.RWMutex{}
@@ -199,20 +211,71 @@ func PostMatch(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "country name required", 400)
 		return
 	}
+	if country.Hoge == "" {
+		rest.Error(w, "hoge required", 400)
+		return
+	}
+	// if country.Hoge == "" {
+	// 	rest.Error(w, "hoge required", 400)
+	// 	return
+	// }
+	// if country.Hoge == "" {
+	// 	rest.Error(w, "hoge required", 400)
+	// 	return
+	// }
 	lock.Lock()
-	// store[country.Code] = &country
+	store[country.Code] = &country
 	lock.Unlock()
 	w.WriteJson(&country)
 }
 
-// func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
-// 	lock.RLock()
-// 	countries := make([]Country, len(store)) // mapを初期化してる storeの数だけ場所を確保している
-// 	i := 0
-// 	for _, country := range store {
-// 		countries[i] = *country
-// 		i++
-// 	}
-// 	lock.RUnlock()
-// 	w.WriteJson(&countries)
-// }
+func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
+	lock.RLock()
+	countries := make([]Country, len(store)) // mapを初期化してる storeの数だけ場所を確保している
+	i := 0
+	for _, country := range store {
+		countries[i] = *country
+		i++
+	}
+	lock.RUnlock()
+	w.WriteJson(&countries)
+}
+
+func GetCountry(w rest.ResponseWriter, r *rest.Request) {
+	code_val := r.PathParam("code")
+	// fmt.Println("aaaa")
+	// code はstr型
+	var code int
+	code, _ = strconv.Atoi(code_val)
+	fmt.Println(code) // urlのパラメータ
+	lock.RLock()
+	var country *Country
+	// fmt.Printf("%T\n", country) // nil
+	// fmt.Println("%T", store) //map
+
+	// fmt.Printf("%T %T\n", store, code) // map[int]*main.Countryと string
+	// if store[code] == nil {
+	// 	fmt.Printf("nil")
+	// }
+    if store[code] != nil {
+        country = &Country{}
+		*country = *store[code]
+		// fmt.Println(*country)
+		// fmt.Println("x")
+    }
+    lock.RUnlock()
+
+	
+
+    // if country == nil { // ここの左辺がなぜstore[code]じゃだめかわからない 動いたからヨシはだめなので後で考える
+	if store[code] == nil {
+		rest.NotFound(w, r)
+		// fmt.Println("a")
+        return
+    }
+    w.WriteJson(country)
+}
+
+
+// Routes sharing a common placeholder MUST name it consistently: id != code
+// /matches/:[] ここがかぶるとだめ
