@@ -10,16 +10,20 @@ func TestCelSellectedTimesCount(t *testing.T) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
+	width := 5
+	height := 4
+
 	points := [][]int{
-		[]int{ 3,  2,  1,  0,  2},
-		[]int{-1, -3,  3,  1, -2},
-		[]int{ 3, -1,  1, -3,  3},
-		[]int{ 0, -2,  1,  2,  0},
+		{ 3,  2,  1,  0,  2},
+		{-1, -3,  3,  1, -2},
+		{ 3, -1,  1, -3,  3},
+		{ 0, -2,  1,  2,  0},
 		
 	}
-	cells := [][]apispec.Cell{}
-	for i, cellLine := range cells {
-		for j := range cellLine {
+	cells := make([][]apispec.Cell, height)
+	for i, cellRow := range cells {
+		cells[i] = make([]apispec.Cell, width)
+		for j := range cellRow {
 			cells[i][j].Status = "free"
 			cells[i][j].TeamID = 0
 		}
@@ -174,29 +178,29 @@ func TestCelSellectedTimesCount(t *testing.T) {
 	result := f.CellSelectedTimesCount(isValid, updateActions)
 	
 	expected := [][]int{
-		[]int{0, 0, 0, 0, 0},
-		[]int{2, 1, 0, 1, 0},
-		[]int{0, 1, 1, 0, 1},
-		[]int{0, 0, 1, 0, 0},
+		{0, 0, 0, 0, 0},
+		{2, 1, 0, 1, 0},
+		{0, 1, 1, 0, 1},
+		{0, 0, 1, 0, 0},
 		
 	}
 
 	// result の配列のサイズは正しいか？
 	if len(result) != len(expected) {
-		t.Fatalf("len(result): ", len(result), "\nlen(expected): ", len(expected))
+		t.Fatalf("len(result): %d\nlen(expected): %d", len(result), len(expected))
 	}
 	for i := range result {
 		if len(result[i]) != len(expected[i]) {
-			t.Errorf("i: ", i, "\nlen(result[", i, "]): ", len(result[i]), "\nlen(expected[", i, "]): ", len(expected[i]))
+			t.Errorf("i: %d\nlen(result[%d]): %d\nlen(expected[%d]): %d", i, i, len(result[i]), i, len(expected))
 		}
 	}
 
 	// 各マスの数値は正しいか？
 	if t.Failed() == false {
 		for i, resultLine := range result {
-			for j := resultLine {
+			for j := range resultLine {
 				if result[i][j] != expected[i][j] {
-					t.Errorf("i: ", i, ", j: ", j, "\nresult[", i, "][", j, "]: ", result[i][j], "\nexpected[", i, "][", j, "]: ", expected[i][j])
+					t.Errorf("i: %d, j: %d\nresult[%d][%d]: %d\nexpected[%d][%d]: %d", i, j, i, j, result[i][j], i, j, expected[i][j])
 				}
 			}
 		}

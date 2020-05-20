@@ -274,8 +274,8 @@ func (f *Field) ActMove(updateAction *apispec.UpdateAction) {
 // ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
 func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
 	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction.AgentID].X + updateAction.DX;
-	y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
+	// x := f.Agents[updateAction.AgentID].X + updateAction.DX;
+	// y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
 	// 城壁 (wall) を除去する、つまりfreeに…
 	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
 	// 後回し！！！！！！！！！！！！！
@@ -459,11 +459,11 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 			// 指定された AgentID は存在しない　想定外　論外
 			res[index] = false
 			continue
-		} else if updateAction.DX != -1 || updateAction.DX != 0 || updateAction.DX != 1 {
+		} else if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
 			// DX の値が不正　瞬間移動はできない。
 			res[index] = false
 			continue
-		} else if updateAction.DY != -1 || updateAction.DY != 0 || updateAction.DY != 1 {
+		} else if updateAction.DY != -1 && updateAction.DY != 0 && updateAction.DY != 1 {
 			// DY の値が不正　瞬間移動はできない。
 			res[index] = false
 			continue
