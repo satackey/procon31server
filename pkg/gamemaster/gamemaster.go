@@ -5,15 +5,19 @@ import (
 	"time"
 
 	"github.com/satackey/procon31server/pkg/apispec"
+	"github.com/satackey/procon31server/pkg/field"
 )
 
+// Match は
 type Match struct {
 	FieldStatus    *apispec.FieldStatus
+	Field          *field.Field
 	TurnMillis     int
 	IntervalMillis int
 	StartsAt       int
 }
 
+// GameMaster は
 type GameMaster struct {
 	Matches map[int]*Match
 }
@@ -22,14 +26,19 @@ type GameMaster struct {
 func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
-		return 0, errors.New("エラーを表す文字列")
+		return 0, errors.New("startsAtが今の時刻より前です")
 	}
 
 	matchID := len(g.Matches)
 	// マップの数(=Matchの数)をmatchIDに
 
+	field := &field.Field{}
+	field.initField(fieldStatus)
+	// fieldStatusをfieldに、、
+
 	match := &Match{
-		FieldStatus:    fieldStatus,
+		// FieldStatus:    fieldStatus,
+		Field:          field,
 		TurnMillis:     turnMillis,
 		IntervalMillis: intervalMillis,
 		StartsAt:       startsAt,
@@ -42,6 +51,13 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 
 	match.Turnendcalc(1)
 	// 時間を計算する関数を呼び出す
+
+	go func(){
+		time.Sleep(time.Duration() * time.Millisecond)
+		// endtime秒後にfield.ActAgents()をしたい
+		// こんなかんじ？ぼんやりです
+		// 並列処理をしたい
+	}
 	// 各ターン終了の時間に点数計算をするようにする
 
 	return matchID, nil
@@ -66,7 +82,7 @@ func (g *GameMaster) GetFieldByID(matchID int) (*apispec.FieldStatus, error) {
 	match, ok := g.Matches[matchID]
 
 	if !ok {
-		return &apispec.FieldStatus{}, errors.New("エラーを表す文字列")
+		return &apispec.FieldStatus{}, errors.New("試合のIDが存在しません")
 	}
 	// 受け取ったmatchIDが存在するかの判定、存在しない場合はその旨をエラーで表す
 
