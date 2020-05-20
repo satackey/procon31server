@@ -210,7 +210,7 @@ func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.
 	return distinationCount
 }
 
-// ConvertIntoHistory は エージェント1体の行動情報を、行動履歴に変換します。
+// ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
 func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, distinationCount [][]int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
@@ -251,37 +251,44 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
 	switch updateAction.Type {
 		case "move" :
-			f.ActMove(updateAction);
+			f.ActMove(updateAction)
 		case "remove" :
-			f.ActRemove(updateAction);
+			f.ActRemove(updateAction)
 		case "stay" :
-			f.ActStay(updateAction);
+			f.ActStay(updateAction)
 		case "put" :
-			f.ActPut(updateAction);
+			f.ActPut(updateAction)
 	}
 }
 
 // ActMove は type = "move" のとき ActuallyActAgent により実行されます
 func (f *Field) ActMove(updateAction *apispec.UpdateAction) {
 	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction.AgentID].X + updateAction.DX;
-	y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
+	x := f.Agents[updateAction.AgentID].X + updateAction.DX
+	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
 	// エージェントの座標を変える
-	f.Agents[updateAction.AgentID].X = x;
-	f.Agents[updateAction.AgentID].Y = y;
+	f.Agents[updateAction.AgentID].X = x
+	f.Agents[updateAction.AgentID].Y = y
 	// 移動先の座標を自陣の城壁に変える
-	f.Cells[y][x].TiledBy = f.Agents[updateAction.AgentID].TeamID;
-	f.Cells[y][x].Status = "wall";
+	f.Cells[y][x].TiledBy = f.Agents[updateAction.AgentID].TeamID
+	f.Cells[y][x].Status = "wall"
 }
 
 // ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
 func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
 	// 移動先のx, y座標を取得する
-	// x := f.Agents[updateAction.AgentID].X + updateAction.DX;
-	// y := f.Agents[updateAction.AgentID].Y + updateAction.DY;
+	x := f.Agents[updateAction.AgentID].X + updateAction.DX
+	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
 	// 城壁 (wall) を除去する、つまりfreeに…
 	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
 	// 後回し！！！！！！！！！！！！！
+
+	// 考察した結果、除去されたセルは仮にfreeとしておき、全ての行動を適用した後にareaになるかどうか計算すればいい！！！
+	// 怪人ジンチー、死亡…😢
+
+	// wallを除去し、freeにする
+	f.Cells[y][x].TiledBy = 0
+	f.Cells[y][x].Status = "free"
 }
 
 // ActStay は type = "stay" のとき ActuallyActAgent により実行されます
@@ -292,7 +299,19 @@ func (f *Field) ActStay(updateAction *apispec.UpdateAction) {
 
 // ActPut は type = "put" のとき ActuallyActAgent により実行されます
 func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
-	
+	// 移動先のx, y座標を取得する
+	x := updateAction.X
+	y := updateAction.Y
+	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
+	// newAgentID の決め方を考えよう
+	newAgentID := 0
+	f.Agents[newAgentID] = &Agent{
+		ID: newAgentID,
+		TeamID: f.Agents[updateAction.AgentID].TeamID,
+		X: x,
+		Y: y,
+		field: f,
+	}
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
