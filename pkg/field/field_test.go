@@ -6,7 +6,7 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
-func TestCelSellectedTimesCount(t *testing.T) {
+func TestCellSelectedTimesCount(t *testing.T) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
@@ -187,11 +187,11 @@ func TestCelSellectedTimesCount(t *testing.T) {
 
 	// result の配列のサイズは正しいか？
 	if len(result) != len(expected) {
-		t.Fatalf("len(result): %d\nlen(expected): %d", len(result), len(expected))
+		t.Fatalf("\nlen(result): %d\nlen(expected): %d", len(result), len(expected))
 	}
 	for i := range result {
 		if len(result[i]) != len(expected[i]) {
-			t.Errorf("i: %d\nlen(result[%d]): %d\nlen(expected[%d]): %d", i, i, len(result[i]), i, len(expected))
+			t.Errorf("\ni: %d\nlen(result[%d]): %d\nlen(expected[%d]): %d", i, i, len(result[i]), i, len(expected))
 		}
 	}
 
@@ -200,7 +200,7 @@ func TestCelSellectedTimesCount(t *testing.T) {
 		for i, resultLine := range result {
 			for j := range resultLine {
 				if result[i][j] != expected[i][j] {
-					t.Errorf("i: %d, j: %d\nresult[%d][%d]: %d\nexpected[%d][%d]: %d", i, j, i, j, result[i][j], i, j, expected[i][j])
+					t.Errorf("\ni: %d, j: %d\nresult[%d][%d]: %d\nexpected[%d][%d]: %d", i, j, i, j, result[i][j], i, j, expected[i][j])
 				}
 			}
 		}

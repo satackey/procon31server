@@ -188,7 +188,10 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 
 // CellSelectedTimesCount は各セルが行動先に選ばれた回数を返します
 func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.UpdateAction) [][]int {
-	var distinationCount [][]int
+	distinationCount := make([][]int, f.Height)
+	for i := range distinationCount {
+		distinationCount[i] = make([]int, f.Width)
+	}
 
 	for i, updateAction := range updateActions {
 		if isValid[i] == true {
@@ -200,7 +203,7 @@ func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.
 				x = f.Agents[updateAction.AgentID].X + updateAction.DX
 				y = f.Agents[updateAction.AgentID].Y + updateAction.DY
 			}
-			distinationCount[x][y]++
+			distinationCount[y][x]++
 		}
 	}
 
