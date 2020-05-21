@@ -186,11 +186,12 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 	return Sum
 }
 
-// CellSelectedTimesCount は各セルが行動先に選ばれた回数を返します
-func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.UpdateAction) [][]int {
-	distinationCount := make([][]int, f.Height)
-	for i := range distinationCount {
-		distinationCount[i] = make([]int, f.Width)
+// RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報を記録します
+func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispec.UpdateAction) [][][]*apispec.UpdateAction {
+
+	selectedAgents := make([][][]*apispec.UpdateAction, f.Height)
+	for i := range selectedAgents {
+		selectedAgents[i] = make([][]*apispec.UpdateAction, f.Width)
 	}
 
 	for i, updateAction := range updateActions {
@@ -203,11 +204,11 @@ func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.
 				x = f.Agents[updateAction.AgentID].X + updateAction.DX
 				y = f.Agents[updateAction.AgentID].Y + updateAction.DY
 			}
-			distinationCount[y][x]++
+			selectedAgents[y][x] = append(selectedAgents[y][x], updateActions[i])
 		}
 	}
 
-	return distinationCount
+	return selectedAgents
 }
 
 // DetermineIfApplied は 行動情報が競合か
@@ -332,7 +333,7 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 
 	// セルが行動先に選ばれた回数をカウントします
 	// セルが選ばれた回数　ではなく、そのセルを選んでいるエージェントのIDをスライスにして保存したほうが良さげ。
-	distinationCount := f.CellSelectedTimesCount(isValid, updateActions)
+	selectedAgents := f.RecordCellSelectedAgents(isValid, updateActions)
 
 	// 一時的にコメントアウト
 
@@ -359,13 +360,13 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 
 	// DistinationCount と IsValid に基づいて apply が決定
 	isApply := make([]int, len(updateActions))
-	f.DetermineIfApplied(isValid, updateActions, distinationCount, &isApply)
+	f.DetermineIfApplied(isValid, updateActions, selectedAgents, &isApply)
 	// []AgentActionHistoryつくる
 	var agentActionHistories []AgentActionHistory
 	// 各updateActionに対して
 	for i, updateAction := range updateActions {
 		// updateaction -> []AgentActionHistry に変換して代入
-		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, distinationCount)
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, selectedAgents)
 		// apply == 1 なら実際に動かす
 		if agentActionHistories[i].Apply == 1 {
 			f.ActuallyActAgent(updateAction)
