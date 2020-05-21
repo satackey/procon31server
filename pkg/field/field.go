@@ -210,6 +210,14 @@ func (f *Field) CellSelectedTimesCount(isValid []bool, updateActions []*apispec.
 	return distinationCount
 }
 
+// DetermineIfApplied は 行動情報が競合か
+func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, distinationCount [][]int, isApply *[]int) {
+	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
+	// 二重ループで実装できそう。
+	// 競合しているセルをqueueに突っ込む
+	// queueから出したセルを行動先に選んでいるセル
+}
+
 // ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
 func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, distinationCount [][]int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
@@ -304,7 +312,9 @@ func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
 	y := updateAction.Y
 	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
 	// newAgentID の決め方を考えよう
-	newAgentID := 0
+	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
+	newAgentID := updateAction.AgentID + 1
+	for _, isExistKey := f.Agents[updateAction.AgentID]; isExistKey == true; newAgentID ++ {}
 	f.Agents[newAgentID] = &Agent{
 		ID: newAgentID,
 		TeamID: f.Agents[updateAction.AgentID].TeamID,
@@ -321,12 +331,8 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// もうやったのでIsValidは信用していいデータらしい。
 
 	// セルが行動先に選ばれた回数をカウントします
+	// セルが選ばれた回数　ではなく、そのセルを選んでいるエージェントのIDをスライスにして保存したほうが良さげ。
 	distinationCount := f.CellSelectedTimesCount(isValid, updateActions)
-	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
-	// 二重ループで実装できそう。
-	// 競合しているセルをqueueに突っ込む
-	// queueから出したセルを行動先に選んでいるセル
-
 
 	// 一時的にコメントアウト
 
@@ -352,7 +358,8 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// }
 
 	// DistinationCount と IsValid に基づいて apply が決定
-
+	isApply := make([]int, len(updateActions))
+	f.DetermineIfApplied(isValid, updateActions, distinationCount, &isApply)
 	// []AgentActionHistoryつくる
 	var agentActionHistories []AgentActionHistory
 	// 各updateActionに対して
