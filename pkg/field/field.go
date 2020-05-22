@@ -221,10 +221,10 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
 	// 競合しているセルをstackに突っ込む
 	stk := stack.New()
-	for i, selectedAgentsIndexTable := range selectedAgentsIndex {
-		for j, selectedAgentsIndexList := range selectedAgentsIndexTable {
+	for i := range selectedAgentsIndex {
+		for j := range selectedAgentsIndex[i] {
 			if len(selectedAgentsIndex[i][j]) >= 2 {
-				for k := range selectedAgentsIndexList {
+				for k := range selectedAgentsIndex[i][j] {
 					stk.Push(selectedAgentsIndex[i][j][k])
 				}
 			}

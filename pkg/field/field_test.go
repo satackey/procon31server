@@ -7,6 +7,8 @@ import (
 )
 
 func TestCellSelectedTimesCount(t *testing.T) {
+	// ----- Field構造体とupdateActionのサンプルここから --------------------------------
+
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
@@ -174,42 +176,51 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			Y:       0,
 		},
 	}
+	// ----- Field構造体とupdateActionのサンプルここまで --------------------------------
 
-	result := f.CellSelectedTimesCount(isValid, updateActions)
+	result := f.RecordCellSelectedAgents(isValid, updateActions)
 	
-	expected := [][]int{
-		{0, 0, 0, 0, 0},
-		{2, 1, 0, 1, 0},
-		{0, 1, 1, 0, 1},
-		{0, 0, 1, 0, 0},
-		
+	expected := make([][][]int, f.Height)
+	for i := range expected {
+		expected[i] = make([][]int, f.Width)
+		for j := range expected[i] {
+			expected[i][j] = make([]int, 0)
+		}
 	}
+	expected[1][0] = []int{0, 1}
+	expected[1][1] = []int{3}
+	expected[1][3] = []int{6}
+	expected[2][1] = []int{7}
+	expected[2][2] = []int{4}
+	expected[2][4] = []int{2}
+	expected[3][2] = []int{5}
 
 	// result の配列のサイズは正しいか？
 	if len(result) != len(expected) {
-		t.Fatalf("\nlen(result): %d\nlen(expected): %d", len(result), len(expected))
+		t.Fatalf("\nlen(result): %d\nlen(expected): %d\n", len(result), len(expected))
 	}
 	for i := range result {
 		if len(result[i]) != len(expected[i]) {
-			t.Errorf("\ni: %d\nlen(result[%d]): %d\nlen(expected[%d]): %d", i, i, len(result[i]), i, len(expected))
+			t.Fatalf("\ni: %d\nlen(result[i]): %d\nlen(expected[i]): %d\n", i, len(result[i]), len(expected[i]))
 		}
-	}
-
-	// 各マスの数値は正しいか？
-	if t.Failed() == false {
-		for i, resultLine := range result {
-			for j := range resultLine {
-				if result[i][j] != expected[i][j] {
-					t.Errorf("\ni: %d, j: %d\nresult[%d][%d]: %d\nexpected[%d][%d]: %d", i, j, i, j, result[i][j], i, j, expected[i][j])
+		for j := range result[i] {
+			if len(result[i][j]) != len(expected[i][j]) {
+				t.Fatalf("\ni: %d, j: %d\nlen(result[i][j]): %d\nlen(expected[i][j]): %d\n", i, j, len(result[i][j]), len(expected[i][j]))
+			}
+			// 保存されているindexの値は正しいか？
+			for k := range result[i][j] {
+				if result[i][j][k] != expected[i][j][k] {
+					t.Fatalf("\ni: %d, j: %d, k: %d\nresult[i][j][k]: %d\nexpected[i][j][k]: %d\n", i, j, k, result[i][j][k], expected[i][j][k])
 				}
+				t.Log(result[i][j][k], " ")
 			}
 		}
 	}
 
 	// テストが成功しているなら褒める
 	if t.Failed() == false {
-		t.Logf("The test is successful!!!")
+		t.Logf("RecordCellSelectedAgents() is correct!!!")
 	}
 
-	t.Log("CellSelectedTimesCount() Test is finished.")
+	t.Log("Test is finished.")
 }
