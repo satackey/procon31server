@@ -358,7 +358,7 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	isApply := make([]int, len(updateActions))
 	f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex, &isApply)
 	// []AgentActionHistoryつくる
-	var agentActionHistories []AgentActionHistory
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
 	// 各updateActionに対して
 	for i, updateAction := range updateActions {
 		// updateaction -> []AgentActionHistry に変換して代入
@@ -369,8 +369,12 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 		}
 	}
 	// f.ActionHistories[i].AgentActionHistories に agentActionHistories を代入
-	// 何番目？0-indexedかなどうかな
-	f.ActionHistories[0].AgentActionHistories = agentActionHistories
+	// もし0ターン目ならActionHistories[0]は使わないので空けておく
+	if f.Turn == 0 {
+		f.ActionHistories = append(f.ActionHistories, ActionHistory{})
+	}
+	// f.Turn+1 ターン目の行動情報を記録する
+	f.ActionHistories = append(f.ActionHistories, ActionHistory{AgentActionHistories: agentActionHistories})
 }
 
 // 旧ActAgents (削除予定)
