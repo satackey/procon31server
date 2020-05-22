@@ -186,12 +186,12 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 	return Sum
 }
 
-// RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報を記録します
-func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispec.UpdateAction) [][][]*apispec.UpdateAction {
+// RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報の要素番号を記録します
+func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispec.UpdateAction) [][][]int {
 
-	selectedAgents := make([][][]*apispec.UpdateAction, f.Height)
+	selectedAgents := make([][][]int, f.Height)
 	for i := range selectedAgents {
-		selectedAgents[i] = make([][]*apispec.UpdateAction, f.Width)
+		selectedAgents[i] = make([][]int, f.Width)
 	}
 
 	for i, updateAction := range updateActions {
@@ -204,27 +204,62 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 				x = f.Agents[updateAction.AgentID].X + updateAction.DX
 				y = f.Agents[updateAction.AgentID].Y + updateAction.DY
 			}
-			selectedAgents[y][x] = append(selectedAgents[y][x], updateActions[i])
+			selectedAgents[y][x] = append(selectedAgents[y][x], i)
 		}
 	}
 
 	return selectedAgents
 }
 
-// DetermineIfApplied は 行動情報が競合か
-func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, distinationCount [][]int, isApply *[]int) {
+// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply を初期化します
+func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int, isApply *[]int) {
+	// isApply を初期化
+	for i := range *isApply {
+		(*isApply)[i] = 1
+	}
+
 	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
-	// 二重ループで実装できそう。
-	// 競合しているセルをqueueに突っ込む
-	// queueから出したセルを行動先に選んでいるセル
+	// 競合しているセルをstackに突っ込む
+	stk := stack.New()
+	for i, selectedAgentsIndexTable := range selectedAgentsIndex {
+		for j, selectedAgentsIndexList := range selectedAgentsIndexTable {
+			if len(selectedAgentsIndex[i][j]) >= 2 {
+				for k := range selectedAgentsIndexList {
+					stk.Push(selectedAgentsIndex[i][j][k])
+				}
+			}
+		}
+	}
+
+	// isValid[i] == false => isApply[i] = -1
+	for i := range isValid {
+		if isValid[i] == false {
+			(*isApply)[i] = -1
+		}
+	}
+
+	// stackから出したセルを行動先に選んでいるセル
+	for stk.Len() != 0 {
+		updateActionIndex := stk.Pop().(int)
+		if (*isApply)[updateActionIndex] == -1 {
+			fmt.Printf("yabeeeeeeee\n")
+		}
+		(*isApply)[updateActionIndex] = 0
+		x := f.Agents[updateActions[updateActionIndex].AgentID].X
+		y := f.Agents[updateActions[updateActionIndex].AgentID].Y
+		for i := range selectedAgentsIndex[y][x] {
+			stk.Push(selectedAgentsIndex[y][x][i])
+		}
+	}
 }
 
 // ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
-func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, distinationCount [][]int) AgentActionHistory {
+func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, isApply int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
 		Type:    updateAction.Type,
 		Turn:    f.Turn,
+		Apply:   isApply,
 	}
 
 	if updateAction.Type == "put" {
@@ -235,38 +270,20 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 		agentActionHistory.DY = updateAction.DY
 	}
 
-	if isValid == true {
-		var x, y int
-		if updateAction.Type == "put" {
-			x = updateAction.X
-			y = updateAction.Y
-		} else {
-			x = f.Agents[updateAction.AgentID].X + updateAction.DX
-			y = f.Agents[updateAction.AgentID].Y + updateAction.DY
-		}
-		if distinationCount[y][x] == 1 {
-			agentActionHistory.Apply = 1
-		} else {
-			agentActionHistory.Apply = 0
-		}
-	} else {
-		agentActionHistory.Apply = -1
-	}
-
 	return agentActionHistory
 }
 
 // ActuallyActAgent は マジで行動情報に基づいてフィールド情報を更新します
 func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
 	switch updateAction.Type {
-		case "move" :
-			f.ActMove(updateAction)
-		case "remove" :
-			f.ActRemove(updateAction)
-		case "stay" :
-			f.ActStay(updateAction)
-		case "put" :
-			f.ActPut(updateAction)
+	case "move":
+		f.ActMove(updateAction)
+	case "remove":
+		f.ActRemove(updateAction)
+	case "stay":
+		f.ActStay(updateAction)
+	case "put":
+		f.ActPut(updateAction)
 	}
 }
 
@@ -315,13 +332,14 @@ func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
 	// newAgentID の決め方を考えよう
 	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
 	newAgentID := updateAction.AgentID + 1
-	for _, isExistKey := f.Agents[updateAction.AgentID]; isExistKey == true; newAgentID ++ {}
+	for _, isExistKey := f.Agents[updateAction.AgentID]; isExistKey == true; newAgentID++ {
+	}
 	f.Agents[newAgentID] = &Agent{
-		ID: newAgentID,
+		ID:     newAgentID,
 		TeamID: f.Agents[updateAction.AgentID].TeamID,
-		X: x,
-		Y: y,
-		field: f,
+		X:      x,
+		Y:      y,
+		field:  f,
 	}
 }
 
@@ -331,42 +349,20 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// 行動を精査します
 	// もうやったのでIsValidは信用していいデータらしい。
 
-	// セルが行動先に選ばれた回数をカウントします
-	// セルが選ばれた回数　ではなく、そのセルを選んでいるエージェントのIDをスライスにして保存したほうが良さげ。
-	selectedAgents := f.RecordCellSelectedAgents(isValid, updateActions)
-
-	// 一時的にコメントアウト
-
-	// セルに保存された回数が1回なら、実行できます(Apply:1)
-	// Apply := 1
-	// for i, updateAction := range updateActions {
-	// 	if IsValid[i] == false {
-	// 		var slise []AgentActionHistory
-	// 		f.ActionHistories[i].AgentActionHistories = append(f.ActionHistories[i].AgentActionHistories, slise...) // sliseの中身を追加する
-	// 		Apply = -1
-	// 		// f.Turn
-	// 		continue
-	// 	}
-	// 	x := f.Agents[updateAction.AgentID].X + updateAction.DX
-	// 	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
-	// 	if DistinationCount[x][y] == 1 {
-	// 		// 動ける、動かす
-	// 		Apply = 1
-	// 	} else {
-	// 		// 競合して動けない、stayにする
-	// 		Apply = 0
-	// 	}
-	// }
+	// セルが選ばれた回数　ではなく、そのセルを選んでいる行動情報の要素番号をスライスにして保存
+	// selectedAgentsIndex[y][x] := (x, y)を移動先に選んでいる行動情報の要素番号の配列
+	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
 
 	// DistinationCount と IsValid に基づいて apply が決定
+	// i番目のupdateActionが許容か競合か不正か
 	isApply := make([]int, len(updateActions))
-	f.DetermineIfApplied(isValid, updateActions, selectedAgents, &isApply)
+	f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex, &isApply)
 	// []AgentActionHistoryつくる
 	var agentActionHistories []AgentActionHistory
 	// 各updateActionに対して
 	for i, updateAction := range updateActions {
 		// updateaction -> []AgentActionHistry に変換して代入
-		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, selectedAgents)
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
 		// apply == 1 なら実際に動かす
 		if agentActionHistories[i].Apply == 1 {
 			f.ActuallyActAgent(updateAction)
@@ -376,7 +372,6 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// 何番目？0-indexedかなどうかな
 	f.ActionHistories[0].AgentActionHistories = agentActionHistories
 }
-
 
 // 旧ActAgents (削除予定)
 
