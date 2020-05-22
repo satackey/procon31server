@@ -2,6 +2,7 @@ package gamemaster
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -17,20 +18,48 @@ type Match struct {
 	StartsAt       int
 }
 
+// Team は
+type Team struct {
+	JoinedMatches []*joinedMatch
+}
+
+type joinedMatch struct {
+	ID          int
+	LocalTeamID int
+}
+
 // GameMaster は
 type GameMaster struct {
 	Matches map[int]*Match
+	Teams   map[string]*Team
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int) (int, error) {
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, globalTeamID1 string, globalTeamID2 string) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
 		return 0, errors.New("startsAtが今の時刻より前です")
 	}
 
+	globalTeam1, ok1 := g.Teams[globalTeamID1]
+	globalTeam2, ok2 := g.Teams[globalTeamID2]
+	// _, ok := マップ[キー]
+	// マップ内にキーが存在するかどうか調べるときはこうやって書く
+	if !ok1 {
+		return 0, errors.New(strings.Join("globalTeamID: ", globalTeamID1, "が存在しません"))
+	}
+	if !ok2 {
+		return 0, errors.New(strings.Join("globalTeamID: ", globalTeamID2, "が存在しません"))
+	}
+	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
+
 	matchID := len(g.Matches)
 	// マップの数(=Matchの数)をmatchIDに
+
+	globalTeam1.JoinedMatches = append(globalTeam1, &joinedMatch{
+		ID:          matchID,
+		LocalTeamID: 1,
+	})
 
 	field := &field.Field{}
 	field.initField(fieldStatus)
@@ -94,6 +123,25 @@ func (g *GameMaster) GetFieldByID(matchID int) (*apispec.FieldStatus, error) {
 }
 
 // PostAgentActions は 各チームのエージェントの行動情報を受け取ります
-func (g *GameMaster) PostAgentActions(teamID int, FieldStatusAction *apispec.FieldStatusAction) {
+func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispec.FieldStatusAction) {
 
 }
+
+// RegisterTeam は チームを登録します
+func (g *GameMaster) RegisterTeam(globalTeamID string) error {
+	// 同じチームIDを登録しようとしていたらエラー
+	g.Teams[globalTeamID].JoinedMatches = make([]joinedMatch, 0)
+}
+
+// GetMatchesByGlobalTeamID は 参加する試合のIDを取得します
+func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) error {
+	// 存在しないチームIDを取得したらエラー
+}
+
+// gm := &GameMaster{}
+
+// `gm.RegisterTeam("tomakomai")
+// gm.RegisterTeam("asahikawa")`
+// // ..
+// gm.CreateMatch(... "tomakomai", "asahikawa")
+// gm.CreateMatch(... "tokyo", "tomakomai")
