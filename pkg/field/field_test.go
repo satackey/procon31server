@@ -31,25 +31,25 @@ func TestDetermineIfApplied(t *testing.T) {
 		}
 	}
 	teams := []apispec.Team{
-		apispec.Team{
+		{
 			TeamID: 3,
 			Agents: []apispec.Agent{
-				apispec.Agent{
+				{
 					AgentID: 303,
 					X: 1,
 					Y: 0,
 				},
-				apispec.Agent{
+				{
 					AgentID: 304,
 					X: 1,
 					Y: 1,
 				},
-				apispec.Agent{
+				{
 					AgentID: 305,
 					X: 3,
 					Y: 1,
 				},
-				apispec.Agent{
+				{
 					AgentID: 306,
 					X: 0,
 					Y: 2,
@@ -59,25 +59,25 @@ func TestDetermineIfApplied(t *testing.T) {
 			WallPoint: 0,
 			AreaPoint: 0,
 		},
-		apispec.Team{
+		{
 			TeamID: 4,
 			Agents: []apispec.Agent{
-				apispec.Agent{
+				{
 					AgentID: 403,
 					X: 1,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 404,
 					X: 2,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 405,
 					X: 3,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 406,
 					X: 2,
 					Y: 3,
@@ -111,7 +111,7 @@ func TestDetermineIfApplied(t *testing.T) {
 	}
 
 	updateActions := []*apispec.UpdateAction{
-		&apispec.UpdateAction{
+		{
 			AgentID: 303,
 			DX:      -1,
 			DY:      1,
@@ -119,7 +119,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 304,
 			DX:      -1,
 			DY:      0,
@@ -127,7 +127,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 305,
 			DX:      1,
 			DY:      1,
@@ -135,7 +135,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 306,
 			DX:      1,
 			DY:      -1,
@@ -143,7 +143,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 403,
 			DX:      1,
 			DY:      0,
@@ -151,7 +151,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 404,
 			DX:      0,
 			DY:      1,
@@ -159,7 +159,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 405,
 			DX:      0,
 			DY:      -1,
@@ -167,7 +167,7 @@ func TestDetermineIfApplied(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 406,
 			DX:      -1,
 			DY:      -1,
@@ -229,25 +229,25 @@ func TestCellSelectedTimesCount(t *testing.T) {
 		}
 	}
 	teams := []apispec.Team{
-		apispec.Team{
+		{
 			TeamID: 3,
 			Agents: []apispec.Agent{
-				apispec.Agent{
+				{
 					AgentID: 303,
 					X: 1,
 					Y: 0,
 				},
-				apispec.Agent{
+				{
 					AgentID: 304,
 					X: 1,
 					Y: 1,
 				},
-				apispec.Agent{
+				{
 					AgentID: 305,
 					X: 3,
 					Y: 1,
 				},
-				apispec.Agent{
+				{
 					AgentID: 306,
 					X: 0,
 					Y: 2,
@@ -257,25 +257,25 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			WallPoint: 0,
 			AreaPoint: 0,
 		},
-		apispec.Team{
+		{
 			TeamID: 4,
 			Agents: []apispec.Agent{
-				apispec.Agent{
+				{
 					AgentID: 403,
 					X: 1,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 404,
 					X: 2,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 405,
 					X: 3,
 					Y: 2,
 				},
-				apispec.Agent{
+				{
 					AgentID: 406,
 					X: 2,
 					Y: 3,
@@ -309,7 +309,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 	}
 
 	updateActions := []*apispec.UpdateAction{
-		&apispec.UpdateAction{
+		{
 			AgentID: 303,
 			DX:      -1,
 			DY:      1,
@@ -317,7 +317,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 304,
 			DX:      -1,
 			DY:      0,
@@ -325,7 +325,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 305,
 			DX:      1,
 			DY:      1,
@@ -333,7 +333,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 306,
 			DX:      1,
 			DY:      -1,
@@ -341,7 +341,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 403,
 			DX:      1,
 			DY:      0,
@@ -349,7 +349,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 404,
 			DX:      0,
 			DY:      1,
@@ -357,7 +357,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 405,
 			DX:      0,
 			DY:      -1,
@@ -365,7 +365,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			X:       0,
 			Y:       0,
 		},
-		&apispec.UpdateAction{
+		{
 			AgentID: 406,
 			DX:      -1,
 			DY:      -1,

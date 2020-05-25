@@ -212,7 +212,8 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 	return selectedAgents
 }
 
-// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply を初期化します
+// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply に保存します
+// OK
 func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int, isApply *[]int) {
 	// isApply を初期化
 	for i := range *isApply {
