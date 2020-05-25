@@ -187,6 +187,7 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 }
 
 // RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報の要素番号を記録します
+// OK
 func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispec.UpdateAction) [][][]int {
 
 	selectedAgents := make([][][]int, f.Height)
