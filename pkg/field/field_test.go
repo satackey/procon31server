@@ -6,6 +6,198 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
+func TestConvertIntoHistory(t *testing.T){
+	// ----- Field構造体とupdateActionのサンプルここから --------------------------------
+
+	f := New()
+
+	// 本来は 12^2 以上 24^2 以下のサイズである
+	width := 5
+	height := 4
+
+	points := [][]int{
+		{ 3,  2,  1,  0,  2},
+		{-1, -3,  3,  1, -2},
+		{ 3, -1,  1, -3,  3},
+		{ 0, -2,  1,  2,  0},
+		
+	}
+	cells := make([][]apispec.Cell, height)
+	for i, cellRow := range cells {
+		cells[i] = make([]apispec.Cell, width)
+		for j := range cellRow {
+			cells[i][j].Status = "free"
+			cells[i][j].TeamID = 0
+		}
+	}
+	teams := []apispec.Team{
+		{
+			TeamID: 3,
+			Agents: []apispec.Agent{
+				{
+					AgentID: 303,
+					X: 1,
+					Y: 0,
+				},
+				{
+					AgentID: 304,
+					X: 1,
+					Y: 1,
+				},
+				{
+					AgentID: 305,
+					X: 3,
+					Y: 1,
+				},
+				{
+					AgentID: 306,
+					X: 0,
+					Y: 2,
+				},
+				
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
+		},
+		{
+			TeamID: 4,
+			Agents: []apispec.Agent{
+				{
+					AgentID: 403,
+					X: 1,
+					Y: 2,
+				},
+				{
+					AgentID: 404,
+					X: 2,
+					Y: 2,
+				},
+				{
+					AgentID: 405,
+					X: 3,
+					Y: 2,
+				},
+				{
+					AgentID: 406,
+					X: 2,
+					Y: 3,
+				},
+				
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
+		},
+		
+	}
+	actions := []apispec.FieldStatusAction{}
+
+	fieldStatus := &apispec.FieldStatus{
+		Width:             5,
+		Height:            4,
+		Points:            points,
+		StartedAtUnixtime: 1576800000,
+		Turn:              0,
+		Cells:             cells,
+		Teams:             teams,
+		Actions:           actions,
+	}
+
+	f.InitField(fieldStatus)
+
+	agentCount := 8
+	isValid := make([]bool, agentCount)
+	for i := range isValid {
+		isValid[i] = true
+	}
+
+	updateActions := []*apispec.UpdateAction{
+		{
+			AgentID: 303,
+			DX:      -1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 304,
+			DX:      -1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 305,
+			DX:      1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 306,
+			DX:      1,
+			DY:      -1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 403,
+			DX:      1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 404,
+			DX:      0,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 405,
+			DX:      0,
+			DY:      -1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 406,
+			DX:      -1,
+			DY:      -1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+	}
+	// ----- Field構造体とupdateActionのサンプルここまで --------------------------------
+
+	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := make([]int, len(updateActions))
+	f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex, &isApply)
+
+	result0 := f.ConvertIntoHistory(isValid[0], updateActions[0], isApply[0])
+	expected0 := AgentActionHistory{
+		AgentID: 303,
+		DX: -1, 
+		DY: 1,
+		X: 0,
+		Y: 0,
+		Type: "move",
+		Turn: 1,
+		Apply: 0,
+	}
+
+	// todo: 正しいかどうか判定する
+	
+}
+
 func TestDetermineIfApplied(t *testing.T) {
 	// ----- Field構造体とupdateActionのサンプルここから --------------------------------
 
