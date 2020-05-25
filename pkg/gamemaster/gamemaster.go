@@ -16,26 +16,30 @@ type Match struct {
 	TurnMillis     int
 	IntervalMillis int
 	StartsAt       int
+	Turns  int
 }
 
 // Team は
 type Team struct {
-	JoinedMatches []*joinedMatch
+	JoinedMatchesByLocalTeamID map[int]*joinedMatch // Key: LocalTeamID と Value: MatchID の紐付けをする
 }
 
 type joinedMatch struct {
-	ID          int
-	LocalTeamID int
+	ID int
+	// LocalTeamID int
+	UpdateActions apispec.UpdateActions
 }
 
 // GameMaster は
 type GameMaster struct {
 	Matches map[int]*Match
 	Teams   map[string]*Team
+	// LocalTeamIDs map[int]int
+	GlobalTeamIDsByLocalTeamID map[int]string
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, globalTeamID1 string, globalTeamID2 string) (int, error) {
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
 		return 0, errors.New("startsAtが今の時刻より前です")
@@ -56,10 +60,15 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 	matchID := len(g.Matches)
 	// マップの数(=Matchの数)をmatchIDに
 
-	globalTeam1.JoinedMatches = append(globalTeam1, &joinedMatch{
-		ID:          matchID,
-		LocalTeamID: 1,
-	})
+	localTeamID1 := matchID * 2
+	localTeamID2 := localTeamID1 + 1
+
+	globalTeam1.JoinedMatchesByLocalTeamID[localTeamID1] = &joinedMatch{
+		ID: matchID,
+	}
+	globalTeam2.JoinedMatchesByLocalTeamID[localTeamID2] = &joinedMatch{
+		ID: matchID,
+	}
 
 	field := &field.Field{}
 	field.initField(fieldStatus)
@@ -71,6 +80,7 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 		TurnMillis:     turnMillis,
 		IntervalMillis: intervalMillis,
 		StartsAt:       startsAt,
+		Turns:			turns,
 		// 型: 値,
 	}
 	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
@@ -124,18 +134,53 @@ func (g *GameMaster) GetFieldByID(matchID int) (*apispec.FieldStatus, error) {
 
 // PostAgentActions は 各チームのエージェントの行動情報を受け取ります
 func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispec.FieldStatusAction) {
-
+	// localTeamID → globalTeamID
+	// g.GlobalTeamIDsByLocalTeamID[localTeamID]
+	// g.Teams[key].JoinedMatchesByLocalTeamID[]
+	// globalTeamID →　Team
+	
+	// Team → localTeamID → joinedMatches
+	// joinedMatches.UpdateActions ←　代入！！
 }
 
 // RegisterTeam は チームを登録します
 func (g *GameMaster) RegisterTeam(globalTeamID string) error {
+	_, exists := g.Teams[globalTeamID]
+	if exists {
+		return errors.New(strings.Join("globalTeamIDはすでに登録されています"))
+		// エラー
+	}
 	// 同じチームIDを登録しようとしていたらエラー
-	g.Teams[globalTeamID].JoinedMatches = make([]joinedMatch, 0)
+
+	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID = make(map[int]*joinedMatch)
+	return nil
 }
 
-// GetMatchesByGlobalTeamID は 参加する試合のIDを取得します
-func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) error {
+// GetMatchesByGlobalTeamID は 参加する試合の情報を取得します
+func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) (apispec.Matches, error) {
+	team, exists := g.Teams[globalTeamID]
+	if !exists {
+		return &apispec.Matches{}, errors.New(strings.Join("globaslTeamIDが存在しません"))
+		// エラー
+	}
 	// 存在しないチームIDを取得したらエラー
+
+	result := make(apispec.Matches, 0)
+	// team.JoinedMatchesByLocalTeamID[n].ID
+	for localTeamID, joinedMatchOfTeam := range team.JoinedMatchesByLocalTeamID {
+		// joinedMatchOfTeam.ID が MatchID
+
+		result := append(result, &apispec.Match{
+			ID:				joinedMatchOfTeam;
+			IntervalMillis:	g.Matches[joinedMatchOfTeam].IntervalMillis;
+			// MatchTo:
+			TeamID:			localTeamID;
+			TurnMillis:		g.Matches[joinedMatchOfTeam].TurnMillis;
+			Turns:			g.Matches[joinedMatchOfTeam].Turns;
+		})
+		// resultを埋めていく
+	}
+	return result, nil
 }
 
 // gm := &GameMaster{}
@@ -145,3 +190,5 @@ func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) error {
 // // ..
 // gm.CreateMatch(... "tomakomai", "asahikawa")
 // gm.CreateMatch(... "tokyo", "tomakomai")
+// globalTeamID1 = tomakomai, localTeamID1 = 1
+// globalTeamID1 = asahikawa, localTeamID1 = 2
