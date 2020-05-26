@@ -256,6 +256,7 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 }
 
 // ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
+// OK
 func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, isApply int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
@@ -372,7 +373,7 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	}
 	// f.ActionHistories[i].AgentActionHistories に agentActionHistories を代入
 	// もし0ターン目ならActionHistories[0]は使わないので空けておく
-	if f.Turn == 0 {
+	if f.Turn == 0 && len(f.ActionHistories) == 0 {
 		f.ActionHistories = append(f.ActionHistories, ActionHistory{})
 	}
 	// f.Turn+1 ターン目の行動情報を記録する
