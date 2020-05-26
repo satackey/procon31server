@@ -133,12 +133,15 @@ func (g *GameMaster) GetFieldByID(matchID int) (*apispec.FieldStatus, error) {
 }
 
 // PostAgentActions は 各チームのエージェントの行動情報を受け取ります
-func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispec.FieldStatusAction) {
-	// localTeamID → globalTeamID
-	// g.GlobalTeamIDsByLocalTeamID[localTeamID]
-	// g.Teams[key].JoinedMatchesByLocalTeamID[]
-	// globalTeamID →　Team
+func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispec.FieldStatusAction) error{
+	globalTeamID, exists := g.GlobalTeamIDsByLocalTeamID[localTeamID]
+	if !exists {
+		return errors.New(strings.Join("localTeamID: ", localTeamID, "が存在しません"))
+	}
+	// 存在しないlocalTeamIDを渡されたらエラー、存在していたらlocalTeamID → globalTeamID
 	
+	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID] = joinedMatches.UpdateActions
+	// globalTeamID →　Team
 	// Team → localTeamID → joinedMatches
 	// joinedMatches.UpdateActions ←　代入！！
 }
@@ -147,7 +150,7 @@ func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispe
 func (g *GameMaster) RegisterTeam(globalTeamID string) error {
 	_, exists := g.Teams[globalTeamID]
 	if exists {
-		return errors.New(strings.Join("globalTeamIDはすでに登録されています"))
+		return errors.New(strings.Join("globalTeamID: ", globalTeamID, "はすでに登録されています"))
 		// エラー
 	}
 	// 同じチームIDを登録しようとしていたらエラー
@@ -160,7 +163,7 @@ func (g *GameMaster) RegisterTeam(globalTeamID string) error {
 func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) (apispec.Matches, error) {
 	team, exists := g.Teams[globalTeamID]
 	if !exists {
-		return &apispec.Matches{}, errors.New(strings.Join("globaslTeamIDが存在しません"))
+		return &apispec.Matches{}, errors.New(strings.Join("globalTeamID: ", globalTeamID, "が存在しません"))
 		// エラー
 	}
 	// 存在しないチームIDを取得したらエラー
