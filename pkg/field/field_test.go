@@ -194,8 +194,33 @@ func TestConvertIntoHistory(t *testing.T){
 		Apply: 0,
 	}
 
-	// todo: 正しいかどうか判定する
-	
+	result4 := f.ConvertIntoHistory(isValid[4], updateActions[4], isApply[4])
+	expected4 := AgentActionHistory{
+		AgentID: 403,
+		DX: 0,
+		DY: 1,
+		X: 0,
+		Y: 0,
+		Type: "move",
+		Turn: 1,
+		Apply: 1,
+	}
+
+	if result0 != expected0 {
+		t.Fatalf("%+v\n%+v\n", result0, expected0)
+	}
+
+	if result4 != expected4 {
+		t.Fatalf("%+v\n%+v\n", result4, expected4)
+	}
+
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("ConvertIntoHistory() is correct!!!")
+	}
+
+	t.Log("Test is finished.")
+
 }
 
 func TestDetermineIfApplied(t *testing.T) {
