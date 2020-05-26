@@ -260,7 +260,7 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
 		Type:    updateAction.Type,
-		Turn:    f.Turn,
+		Turn:    f.Turn + 1,
 		Apply:   isApply,
 	}
 

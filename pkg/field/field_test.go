@@ -197,8 +197,8 @@ func TestConvertIntoHistory(t *testing.T){
 	result4 := f.ConvertIntoHistory(isValid[4], updateActions[4], isApply[4])
 	expected4 := AgentActionHistory{
 		AgentID: 403,
-		DX: 0,
-		DY: 1,
+		DX: 1,
+		DY: 0,
 		X: 0,
 		Y: 0,
 		Type: "move",
@@ -207,11 +207,11 @@ func TestConvertIntoHistory(t *testing.T){
 	}
 
 	if result0 != expected0 {
-		t.Fatalf("%+v\n%+v\n", result0, expected0)
+		t.Fatalf("\nresult0: %+v\nexpected0: %+v\n", result0, expected0)
 	}
 
 	if result4 != expected4 {
-		t.Fatalf("%+v\n%+v\n", result4, expected4)
+		t.Fatalf("\nresult4: %+v\nexpected4: %+v\n", result4, expected4)
 	}
 
 	// テストが成功しているなら褒める
