@@ -6,18 +6,21 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
-func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
+func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
-	width := 5
-	height := 4
+	width := 6
+	height := 8
 	points := [][]int{
-		{ 3,  2,  1,  0,  2},
-		{-1, -3,  3,  1, -2},
-		{ 3, -1,  1, -3,  3},
-		{ 0, -2,  1,  2,  0},
-		
+		{4, -5, 0, 0, -1, 4},
+		{-4, -1, 0, -4, -3, -2},
+		{-1, 3, -2, 4, -1, 3},
+		{4, 0, 0, 1, 1, 1},
+		{-2, 3, 2, 5, -2, 0},
+		{-1, 1, 4, 2, -3, 1},
+		{-1, 3, 5, 3, -4, 0},
+		{-4, 0, 2, 1, 2, 2},
 	}
 	cells := make([][]apispec.Cell, height)
 	for i, cellRow := range cells {
@@ -33,25 +36,34 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 			Agents: []apispec.Agent{
 				{
 					AgentID: 303,
-					X: 1,
-					Y: 0,
+					X:       0,
+					Y:       0,
 				},
 				{
 					AgentID: 304,
-					X: 1,
-					Y: 1,
+					X:       0,
+					Y:       2,
 				},
 				{
 					AgentID: 305,
-					X: 3,
-					Y: 1,
+					X:       4,
+					Y:       2,
 				},
 				{
 					AgentID: 306,
-					X: 0,
-					Y: 2,
+					X:       5,
+					Y:       4,
 				},
-				
+				{
+					AgentID: 307,
+					X:       1,
+					Y:       6,
+				},
+				{
+					AgentID: 308,
+					X:       1,
+					Y:       3,
+				},
 			},
 			WallPoint: 0,
 			AreaPoint: 0,
@@ -61,36 +73,44 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 			Agents: []apispec.Agent{
 				{
 					AgentID: 403,
-					X: 1,
-					Y: 2,
+					X:       2,
+					Y:       1,
 				},
 				{
 					AgentID: 404,
-					X: 2,
-					Y: 2,
+					X:       3,
+					Y:       4,
 				},
 				{
 					AgentID: 405,
-					X: 3,
-					Y: 2,
+					X:       0,
+					Y:       7,
 				},
 				{
 					AgentID: 406,
-					X: 2,
-					Y: 3,
+					X:       1,
+					Y:       7,
 				},
-				
+				{
+					AgentID: 407,
+					X:       5,
+					Y:       7,
+				},
+				{
+					AgentID: 408,
+					X:       2,
+					Y:       3,
+				},
 			},
 			WallPoint: 0,
 			AreaPoint: 0,
 		},
-		
 	}
 	actions := []apispec.FieldStatusAction{}
 
 	fieldStatus := &apispec.FieldStatus{
-		Width:             5,
-		Height:            4,
+		Width:             width,
+		Height:            height,
 		Points:            points,
 		StartedAtUnixtime: 1576800000,
 		Turn:              0,
@@ -101,16 +121,10 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 
 	f.InitField(fieldStatus)
 
-	agentCount := 8
-	isValid := make([]bool, agentCount)
-	for i := range isValid {
-		isValid[i] = true
-	}
-
 	updateActions := []*apispec.UpdateAction{
 		{
 			AgentID: 303,
-			DX:      -1,
+			DX:      1,
 			DY:      1,
 			Type:    "move",
 			X:       0,
@@ -118,31 +132,47 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 		},
 		{
 			AgentID: 304,
-			DX:      -1,
+			DX:      0,
 			DY:      0,
-			Type:    "move",
+			Type:    "put",
 			X:       0,
 			Y:       0,
 		},
 		{
 			AgentID: 305,
-			DX:      1,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       3,
+			Y:       4,
+		},
+		{
+			AgentID: 306,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       4,
+			Y:       2,
+		},
+		{
+			AgentID: 307,
+			DX:      0,
 			DY:      1,
 			Type:    "move",
 			X:       0,
 			Y:       0,
 		},
 		{
-			AgentID: 306,
-			DX:      1,
-			DY:      -1,
+			AgentID: 308,
+			DX:      -1,
+			DY:      1,
 			Type:    "move",
 			X:       0,
 			Y:       0,
 		},
 		{
 			AgentID: 403,
-			DX:      1,
+			DX:      -1,
 			DY:      0,
 			Type:    "move",
 			X:       0,
@@ -151,14 +181,14 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 		{
 			AgentID: 404,
 			DX:      0,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
+			DY:      0,
+			Type:    "put",
+			X:       5,
+			Y:       4,
 		},
 		{
 			AgentID: 405,
-			DX:      0,
+			DX:      1,
 			DY:      -1,
 			Type:    "move",
 			X:       0,
@@ -167,17 +197,50 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction){
 		{
 			AgentID: 406,
 			DX:      -1,
-			DY:      -1,
+			DY:      0,
 			Type:    "move",
 			X:       0,
 			Y:       0,
 		},
+		{
+			AgentID: 407,
+			DX:      1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 408,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       3,
+			Y:       7,
+		},
 	}
+
+	agentCount := len(updateActions)
+	isValid := make([]bool, agentCount)
+	for i := range isValid {
+		isValid[i] = true
+	}
+	isValid[10] = false
 
 	return f, isValid, updateActions
 }
 
-func TestConvertIntoHistory(t *testing.T){
+func TestActAgents(t *testing.T) {
+	f, isValid, updateActions := SetDataForTest()
+
+	result := f
+	expected := f
+
+	result.ActAgents(isValid, updateActions)
+	// todo: expectedを変更する
+}
+
+func TestConvertIntoHistory(t *testing.T) {
 	f, isValid, updateActions := SetDataForTest()
 
 	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
@@ -187,33 +250,49 @@ func TestConvertIntoHistory(t *testing.T){
 	result0 := f.ConvertIntoHistory(isValid[0], updateActions[0], isApply[0])
 	expected0 := AgentActionHistory{
 		AgentID: 303,
-		DX: -1, 
-		DY: 1,
-		X: 0,
-		Y: 0,
-		Type: "move",
-		Turn: 1,
-		Apply: 0,
+		DX:      1,
+		DY:      1,
+		X:       0,
+		Y:       0,
+		Type:    "move",
+		Turn:    1,
+		Apply:   0,
 	}
 
-	result4 := f.ConvertIntoHistory(isValid[4], updateActions[4], isApply[4])
-	expected4 := AgentActionHistory{
-		AgentID: 403,
-		DX: 1,
-		DY: 0,
-		X: 0,
-		Y: 0,
-		Type: "move",
-		Turn: 1,
-		Apply: 1,
+	result3 := f.ConvertIntoHistory(isValid[3], updateActions[3], isApply[3])
+	expected3 := AgentActionHistory{
+		AgentID: 306,
+		DX:      0,
+		DY:      0,
+		X:       4,
+		Y:       2,
+		Type:    "put",
+		Turn:    1,
+		Apply:   1,
+	}
+
+	result10 := f.ConvertIntoHistory(isValid[10], updateActions[10], isApply[10])
+	expected10 := AgentActionHistory{
+		AgentID: 407,
+		DX:      1,
+		DY:      0,
+		X:       0,
+		Y:       0,
+		Type:    "move",
+		Turn:    1,
+		Apply:   -1,
 	}
 
 	if result0 != expected0 {
 		t.Fatalf("\nresult0: %+v\nexpected0: %+v\n", result0, expected0)
 	}
 
-	if result4 != expected4 {
-		t.Fatalf("\nresult4: %+v\nexpected4: %+v\n", result4, expected4)
+	if result3 != expected3 {
+		t.Fatalf("\nresult3: %+v\nexpected3: %+v\n", result3, expected3)
+	}
+
+	if result10 != expected10 {
+		t.Fatalf("\nresult10: %+v\nexpected10: %+v\n", result10, expected10)
 	}
 
 	// テストが成功しているなら褒める
@@ -232,7 +311,7 @@ func TestDetermineIfApplied(t *testing.T) {
 	result := make([]int, len(updateActions))
 
 	f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex, &result)
-	expected := []int{0, 0, 1, 0, 1, 1, 1, 1}
+	expected := []int{0, 0, 1, 1, 1, 1, 0, 1, 1, 1, -1, 1}
 
 	// サイズは正しいか
 	if len(result) != len(expected) {
@@ -258,7 +337,7 @@ func TestCellSelectedTimesCount(t *testing.T) {
 	f, isValid, updateActions := SetDataForTest()
 
 	result := f.RecordCellSelectedAgents(isValid, updateActions)
-	
+
 	expected := make([][][]int, f.Height)
 	for i := range expected {
 		expected[i] = make([][]int, f.Width)
@@ -266,13 +345,16 @@ func TestCellSelectedTimesCount(t *testing.T) {
 			expected[i][j] = make([]int, 0)
 		}
 	}
-	expected[1][0] = []int{0, 1}
-	expected[1][1] = []int{3}
-	expected[1][3] = []int{6}
-	expected[2][1] = []int{7}
-	expected[2][2] = []int{4}
-	expected[2][4] = []int{2}
-	expected[3][2] = []int{5}
+	expected[0][0] = []int{1}
+	expected[1][1] = []int{0, 6}
+	expected[2][4] = []int{3}
+	expected[4][0] = []int{5}
+	expected[4][3] = []int{2}
+	expected[4][5] = []int{7}
+	expected[6][1] = []int{8}
+	expected[7][0] = []int{9}
+	expected[7][1] = []int{4}
+	expected[7][3] = []int{11}
 
 	// result の配列のサイズは正しいか？
 	if len(result) != len(expected) {
