@@ -1,9 +1,15 @@
 package gamemaster
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	// MySQLを使うため
+	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/satackey/procon31server/pkg/apispec"
 	"github.com/satackey/procon31server/pkg/field"
@@ -16,7 +22,7 @@ type Match struct {
 	TurnMillis     int
 	IntervalMillis int
 	StartsAt       int
-	Turns  int
+	Turns          int
 }
 
 // Team は
@@ -27,7 +33,7 @@ type Team struct {
 type joinedMatch struct {
 	ID int
 	// LocalTeamID int
-	UpdateActions apispec.UpdateActions
+	UpdateActions []*apispec.UpdateAction
 }
 
 // GameMaster は
@@ -36,6 +42,7 @@ type GameMaster struct {
 	Teams   map[string]*Team
 	// LocalTeamIDs map[int]int
 	GlobalTeamIDsByLocalTeamID map[int]string
+	DB                         *sql.DB
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
@@ -50,10 +57,10 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 	// _, ok := マップ[キー]
 	// マップ内にキーが存在するかどうか調べるときはこうやって書く
 	if !ok1 {
-		return 0, errors.New(strings.Join("globalTeamID: ", globalTeamID1, "が存在しません"))
+		return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID1, "が存在しません"}, ""))
 	}
 	if !ok2 {
-		return 0, errors.New(strings.Join("globalTeamID: ", globalTeamID2, "が存在しません"))
+		return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID2, "が存在しません"}, ""))
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
@@ -71,7 +78,7 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 	}
 
 	field := &field.Field{}
-	field.initField(fieldStatus)
+	field.InitField(fieldStatus)
 	// fieldStatusをfieldに、、
 
 	match := &Match{
@@ -80,7 +87,7 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 		TurnMillis:     turnMillis,
 		IntervalMillis: intervalMillis,
 		StartsAt:       startsAt,
-		Turns:			turns,
+		Turns:          turns,
 		// 型: 値,
 	}
 	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
@@ -114,7 +121,7 @@ func (m *Match) StartAutoTurnUpdate() {
 		time.Sleep(time.Duration(m.GetRemainingMSecToTheTransitionOnTurn(1)) * time.Millisecond)
 		// 時間を計算する関数を呼び出す
 		// endtime秒後にfield.ActAgents()をしたい
-		field.ActAgents()
+		// field.ActAgents()
 		// 渡す中身は後で、、、
 	}()
 }
@@ -133,24 +140,26 @@ func (g *GameMaster) GetFieldByID(matchID int) (*apispec.FieldStatus, error) {
 }
 
 // PostAgentActions は 各チームのエージェントの行動情報を受け取ります
-func (g *GameMaster) PostAgentActions(localTeamID int, FieldStatusAction *apispec.FieldStatusAction) error{
+func (g *GameMaster) PostAgentActions(localTeamID int, UpdateActions []*apispec.UpdateAction) error {
 	globalTeamID, exists := g.GlobalTeamIDsByLocalTeamID[localTeamID]
 	if !exists {
-		return errors.New(strings.Join("localTeamID: ", localTeamID, "が存在しません"))
+		return errors.New(strings.Join([]string{"localTeamID: ", strconv.Itoa(localTeamID), "が存在しません"}, ""))
 	}
 	// 存在しないlocalTeamIDを渡されたらエラー、存在していたらlocalTeamID → globalTeamID
-	
-	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID] = joinedMatches.UpdateActions
+
+	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID].UpdateActions = UpdateActions
 	// globalTeamID →　Team
 	// Team → localTeamID → joinedMatches
 	// joinedMatches.UpdateActions ←　代入！！
+
+	return nil
 }
 
 // RegisterTeam は チームを登録します
 func (g *GameMaster) RegisterTeam(globalTeamID string) error {
 	_, exists := g.Teams[globalTeamID]
 	if exists {
-		return errors.New(strings.Join("globalTeamID: ", globalTeamID, "はすでに登録されています"))
+		return errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID, "はすでに登録されています"}, ""))
 		// エラー
 	}
 	// 同じチームIDを登録しようとしていたらエラー
@@ -160,10 +169,10 @@ func (g *GameMaster) RegisterTeam(globalTeamID string) error {
 }
 
 // GetMatchesByGlobalTeamID は 参加する試合の情報を取得します
-func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) (apispec.Matches, error) {
+func (g *GameMaster) GetMatchesByGlobalTeamID(globalTeamID string) (*apispec.Matches, error) {
 	team, exists := g.Teams[globalTeamID]
 	if !exists {
-		return &apispec.Matches{}, errors.New(strings.Join("globalTeamID: ", globalTeamID, "が存在しません"))
+		return &apispec.Matches{}, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID, "が存在しません"}, ""))
 		// エラー
 	}
 	// 存在しないチームIDを取得したらエラー
@@ -173,17 +182,29 @@ func (g *GameMaster) GetMatchesByGlobalTeamID(globaTeamID string) (apispec.Match
 	for localTeamID, joinedMatchOfTeam := range team.JoinedMatchesByLocalTeamID {
 		// joinedMatchOfTeam.ID が MatchID
 
-		result := append(result, &apispec.Match{
-			ID:				joinedMatchOfTeam;
-			IntervalMillis:	g.Matches[joinedMatchOfTeam].IntervalMillis;
+		result = append(result, &apispec.Match{
+			ID:             joinedMatchOfTeam.ID,
+			IntervalMillis: g.Matches[joinedMatchOfTeam.ID].IntervalMillis,
+			TeamID:         localTeamID,
+			TurnMillis:     g.Matches[joinedMatchOfTeam.ID].TurnMillis,
+			Turns:          g.Matches[joinedMatchOfTeam.ID].Turns,
 			// MatchTo:
-			TeamID:			localTeamID;
-			TurnMillis:		g.Matches[joinedMatchOfTeam].TurnMillis;
-			Turns:			g.Matches[joinedMatchOfTeam].Turns;
 		})
 		// resultを埋めていく
 	}
-	return result, nil
+	return &result, nil
+}
+
+// ConnectDB はデータベースに接続します
+func (g *GameMaster) ConnectDB() error {
+	db, err := sql.Open("mysql", "procon31server:password@tcp(mysql:3306)/procon31")
+	if err != nil {
+		return fmt.Errorf("データベースに接続できませんでした: %s", err)
+	}
+	defer db.Close()
+	g.DB = db
+
+	return nil
 }
 
 // gm := &GameMaster{}
