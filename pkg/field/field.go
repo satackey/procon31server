@@ -199,6 +199,11 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 		if isValid[i] == true {
 			var x, y int
 			if updateActions[i].Type == "put" {
+				// 自分が移動するわけではないので自分自身の座標も行動先に選んでいると考える
+				nowx := f.Agents[updateAction.AgentID].X
+				nowy := f.Agents[updateAction.AgentID].Y
+				selectedAgents[nowy][nowx] = append(selectedAgents[nowy][nowx], i)
+
 				x = updateAction.X
 				y = updateAction.Y
 			} else {
@@ -207,6 +212,7 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 			}
 			selectedAgents[y][x] = append(selectedAgents[y][x], i)
 		}
+		
 	}
 
 	return selectedAgents
@@ -233,7 +239,7 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 		}
 	}
 
-	// isValid[i] == false => isApply[i] = -1
+	// 不正行動は先にはじいておく
 	for i := range isValid {
 		if isValid[i] == false {
 			(*isApply)[i] = -1
@@ -245,6 +251,10 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 		updateActionIndex := stk.Pop().(int)
 		if (*isApply)[updateActionIndex] == -1 {
 			fmt.Printf("yabeeeeeeee\n")
+		}
+		// put行動は2か所のセルを選んでいるのでこの処理がないとstk.len()が最悪2^nまで膨れる
+		if (*isApply)[updateActionIndex] == 0 {
+			continue
 		}
 		(*isApply)[updateActionIndex] = 0
 		x := f.Agents[updateActions[updateActionIndex].AgentID].X

@@ -231,13 +231,141 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction) {
 }
 
 func TestActAgents(t *testing.T) {
-	f, isValid, updateActions := SetDataForTest()
+	result, isValid, updateActions := SetDataForTest()
+	expected, _, _ := SetDataForTest()
 
-	result := f
-	expected := f
 
 	result.ActAgents(isValid, updateActions)
 	// todo: expectedを変更する
+	expected.ActionHistories = []ActionHistory{
+		{},
+		{
+			AgentActionHistories: []AgentActionHistory{
+				{
+					AgentID: 303,
+					DX: 1,
+					DY: 1,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 0,
+				},
+				{
+					AgentID: 304,
+					DX: 0,
+					DY: 0,
+					X: 0,
+					Y: 0,
+					Type: "put",
+					Turn: 1,
+					Apply: 0,
+				},
+				{
+					AgentID: 305,
+					DX: 0,
+					DY: 0,
+					X: 3,
+					Y: 4,
+					Type: "put",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 306,
+					DX: 0,
+					DY: 0,
+					X: 4,
+					Y: 2,
+					Type: "put",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 307,
+					DX: 0,
+					DY: 1,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 308,
+					DX: -1,
+					DY: 1,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 403,
+					DX: -1,
+					DY: 0,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 0,
+				},
+				{
+					AgentID: 404,
+					DX: 0,
+					DY: 0,
+					X: 5,
+					Y: 4,
+					Type: "put",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 405,
+					DX: 1,
+					DY: -1,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 406,
+					DX: -1,
+					DY: 0,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: 1,
+				},
+				{
+					AgentID: 407,
+					DX: 1,
+					DY: 0,
+					X: 0,
+					Y: 0,
+					Type: "move",
+					Turn: 1,
+					Apply: -1,
+				},
+				{
+					AgentID: 408,
+					DX: 0,
+					DY: 0,
+					X: 3,
+					Y: 7,
+					Type: "move",
+					Turn: 1,
+					Apply: 1,
+				},
+			},
+		},
+	}
+	expected.Cell[hoge][fuga] = hogehoge
+	
 }
 
 func TestConvertIntoHistory(t *testing.T) {
