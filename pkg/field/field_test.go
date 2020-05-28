@@ -364,8 +364,9 @@ func TestActAgents(t *testing.T) {
 			},
 		},
 	}
+	// 明日の僕へ: 競合するようなput行動をするエージェントがいるのでテストケースを変更してね
 	expected.Cell[hoge][fuga] = hogehoge
-	
+
 }
 
 func TestConvertIntoHistory(t *testing.T) {
