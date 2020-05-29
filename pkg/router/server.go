@@ -454,7 +454,15 @@ type UpdateAction struct {
 	DX      int    `json:"dx"`
 	DY      int    `json:"dy"`
 	Type    string `json:"type"`
+	Turn    int    `json:"turn"`
+	// Array   []Agent `json:"agents"`
 }
+
+// type Agent struct {
+// 	AgentID int `json:"agentID"`
+// 	X       int `json:"x"`
+// 	Y       int `json:"y"`
+// }
 
 // TODO:変数名をちゃんと考える
 var store_2 = map[int]*UpdateAction{}
@@ -468,6 +476,10 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 
 	NewActionStruct := UpdateAction{}
 
+	// turnが変更されないか監視するための変数(decodeされる前なのでpostされる値はまだ入っていない(に等しい))
+	NewActionStruct.Turn = 5
+	CheckTurnVal := NewActionStruct.Turn
+	fmt.Println(CheckTurnVal)
 	err := r.DecodeJsonPayload(&NewActionStruct)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
@@ -494,6 +506,12 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "type required", 400)
 		return
 	}
+
+	// turnが書き換えられていないか確認している
+	if CheckTurnVal != NewActionStruct.Turn {
+		NewActionStruct.Turn = CheckTurnVal
+	}
+
 	lock.Lock()
 
 	// matchstruct := Match{}
@@ -538,3 +556,7 @@ func GetUpdateAction(w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(updateactionstruct)
 	// w.WriteJson(matchstruct)
 }
+
+// type Turn struct {
+// 	[]
+// }
