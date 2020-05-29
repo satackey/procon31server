@@ -46,60 +46,67 @@ type GameMaster struct {
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
-	now := time.Now()
-	if now.Unix() > int64(startsAt) {
-		return 0, errors.New("startsAtが今の時刻より前です")
-	}
+// func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
+// 	now := time.Now()
+// 	if now.Unix() > int64(startsAt) {
+// 		return 0, errors.New("startsAtが今の時刻より前です")
+// 	}
 
-	globalTeam1, ok1 := g.Teams[globalTeamID1]
-	globalTeam2, ok2 := g.Teams[globalTeamID2]
-	// _, ok := マップ[キー]
-	// マップ内にキーが存在するかどうか調べるときはこうやって書く
-	if !ok1 {
-		return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID1, "が存在しません"}, ""))
-	}
-	if !ok2 {
-		return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID2, "が存在しません"}, ""))
-	}
-	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
+// 	// sql := fmt.Sprintf("", globalTeamID1)
+// 	// globalTeam1, ok1 := g.DB.Query(sql)
+// 	// sql = fmt.Sprintf("", globalTeamID2)
+// 	// globalTeam2, ok2 := g.DB.Query(sql)
+// 	// globalTeam12はどう扱う？、globalteamIDが存在しない場合のエラーとsqlのエラーはこの場合どうする？
 
-	matchID := len(g.Matches)
-	// マップの数(=Matchの数)をmatchIDに
+// 	// globalTeam1, ok1 := g.Teams[globalTeamID1]
+// 	// globalTeam2, ok2 := g.Teams[globalTeamID2]
+// 	// _, ok := マップ[キー]
+// 	// マップ内にキーが存在するかどうか調べるときはこうやって書く
+// 	// if !ok1 {
+// 	// 	return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID1, "が存在しません"}, ""))
+// 	// }
+// 	// if !ok2 {
+// 	// 	return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID2, "が存在しません"}, ""))
+// 	// }
+// 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	localTeamID1 := matchID * 2
-	localTeamID2 := localTeamID1 + 1
+// 	// sql = fmt.Sprintf("", %d)
+// 	// matchID := len(g.Matches)
+// 	// // マップの数(=Matchの数)をmatchIDに
 
-	globalTeam1.JoinedMatchesByLocalTeamID[localTeamID1] = &joinedMatch{
-		ID: matchID,
-	}
-	globalTeam2.JoinedMatchesByLocalTeamID[localTeamID2] = &joinedMatch{
-		ID: matchID,
-	}
+// 	// localTeamID1 := matchID * 2
+// 	// localTeamID2 := localTeamID1 + 1
 
-	field := &field.Field{}
-	field.InitField(fieldStatus)
-	// fieldStatusをfieldに、、
+// 	// globalTeam1.JoinedMatchesByLocalTeamID[localTeamID1] = &joinedMatch{
+// 	// 	ID: matchID,
+// 	// }
+// 	// globalTeam2.JoinedMatchesByLocalTeamID[localTeamID2] = &joinedMatch{
+// 	// 	ID: matchID,
+// 	// }
 
-	match := &Match{
-		// FieldStatus:    fieldStatus,
-		Field:          field,
-		TurnMillis:     turnMillis,
-		IntervalMillis: intervalMillis,
-		StartsAt:       startsAt,
-		Turns:          turns,
-		// 型: 値,
-	}
-	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
+// 	field := &field.Field{}
+// 	field.InitField(fieldStatus)
+// 	// fieldStatusをfieldに、、
 
-	g.Matches[matchID] = match
-	// matchIDをkeyにしてmap(Matches)に値(match)をセット
+// 	match := &Match{
+// 		// FieldStatus:    fieldStatus,
+// 		Field:          field,
+// 		TurnMillis:     turnMillis,
+// 		IntervalMillis: intervalMillis,
+// 		StartsAt:       startsAt,
+// 		Turns:          turns,
+// 		// 型: 値,
+// 	}
+// 	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
 
-	match.StartAutoTurnUpdate()
+// 	g.Matches[matchID] = match
+// 	// matchIDをkeyにしてmap(Matches)に値(match)をセット
 
-	return matchID, nil
-	// matchIDを関数の戻り値にする
-}
+// 	match.StartAutoTurnUpdate()
+
+// 	return matchID, nil
+// 	// matchIDを関数の戻り値にする
+// }
 
 // GetRemainingMSecToTheTransitionOnTurn は nターン終了時までの時間を計算する関数
 func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) int {
@@ -156,16 +163,38 @@ func (g *GameMaster) PostAgentActions(localTeamID int, UpdateActions []*apispec.
 }
 
 // RegisterTeam は チームを登録します
-func (g *GameMaster) RegisterTeam(globalTeamID string) error {
+func (g *GameMaster) RegisterTeam(globalTeamID string, name string) error {
 	_, exists := g.Teams[globalTeamID]
 	if exists {
 		return errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID, "はすでに登録されています"}, ""))
 		// エラー
 	}
 	// 同じチームIDを登録しようとしていたらエラー
+	sql := fmt.Sprintf("INSERT INTO `teams` (`global_id`, `name`) VALUES ('%s', '%s')", globalTeamID, name)
+	_, err := g.DB.Query(sql)
+	return err
+}
 
-	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID = make(map[int]*joinedMatch)
-	return nil
+func (g *GameMaster) TeamExists(globalTeamID string) (bool, error) {
+	sql := fmt.Sprintf("SELECT global_id FROM `teams` WHERE `global_id` = '%s'", globalTeamID)
+	teams, err := g.DB.Query(sql)
+	if err != nil {
+		return false, err // 取得に失敗しましたとか情報を加える
+	}
+	// dbに存在を問い合わせる
+
+	for teams.Next() {
+		var queriedGlobalTeamID string
+		if err := teams.Scan(&queriedGlobalTeamID); err != nil {
+			return false, err // 情報の抽出に失敗しました
+		}
+
+		if globalTeamID == queriedGlobalTeamID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // GetMatchesByGlobalTeamID は 参加する試合の情報を取得します
@@ -201,7 +230,7 @@ func (g *GameMaster) ConnectDB() error {
 	if err != nil {
 		return fmt.Errorf("データベースに接続できませんでした: %s", err)
 	}
-	defer db.Close()
+	// defer db.Close()
 	g.DB = db
 
 	return nil
