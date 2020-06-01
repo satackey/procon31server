@@ -46,67 +46,72 @@ type GameMaster struct {
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-// func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
-// 	now := time.Now()
-// 	if now.Unix() > int64(startsAt) {
-// 		return 0, errors.New("startsAtが今の時刻より前です")
-// 	}
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
+	now := time.Now()
+	if now.Unix() > int64(startsAt) {
+		return 0, errors.New("startsAtが今の時刻より前です")
+	}
 
-// 	// sql := fmt.Sprintf("", globalTeamID1)
-// 	// globalTeam1, ok1 := g.DB.Query(sql)
-// 	// sql = fmt.Sprintf("", globalTeamID2)
-// 	// globalTeam2, ok2 := g.DB.Query(sql)
-// 	// globalTeam12はどう扱う？、globalteamIDが存在しない場合のエラーとsqlのエラーはこの場合どうする？
+	exists, err := g.TeamExists(globalTeamID1)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		message := fmt.Sprintf("globalTeamID1: %sが存在しません", globalTeamID1)
+		return 0, errors.New(message)
+	}
 
-// 	// globalTeam1, ok1 := g.Teams[globalTeamID1]
-// 	// globalTeam2, ok2 := g.Teams[globalTeamID2]
-// 	// _, ok := マップ[キー]
-// 	// マップ内にキーが存在するかどうか調べるときはこうやって書く
-// 	// if !ok1 {
-// 	// 	return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID1, "が存在しません"}, ""))
-// 	// }
-// 	// if !ok2 {
-// 	// 	return 0, errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID2, "が存在しません"}, ""))
-// 	// }
-// 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
+	exists, err = g.TeamExists(globalTeamID2)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		message := fmt.Sprintf("globalTeamID2: %sが存在しません", globalTeamID2)
+		return 0, errors.New(message)
+	}
+	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-// 	// sql = fmt.Sprintf("", %d)
-// 	// matchID := len(g.Matches)
-// 	// // マップの数(=Matchの数)をmatchIDに
+	sql := fmt.Sprintf("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`) VALUES (NULL, '%d', '%d', '%d', '%d')", startsAt, turnMillis, intervalMillis, turns)
+	creatematch, err := g.DB.Query(sql)
+	if err != nil {
+		return 0, err // 取得に失敗
+	}
 
-// 	// localTeamID1 := matchID * 2
-// 	// localTeamID2 := localTeamID1 + 1
+	var matchID int
+	for creatematch.Next() {
+		if err := creatematch.Scan(&matchID); err != nil {
+			return 0, err // 情報抽出に失敗
+		}
+	}
 
-// 	// globalTeam1.JoinedMatchesByLocalTeamID[localTeamID1] = &joinedMatch{
-// 	// 	ID: matchID,
-// 	// }
-// 	// globalTeam2.JoinedMatchesByLocalTeamID[localTeamID2] = &joinedMatch{
-// 	// 	ID: matchID,
-// 	// }
+	localTeamID1 := matchID * 2
+	localTeamID2 := localTeamID1 + 1
 
-// 	field := &field.Field{}
-// 	field.InitField(fieldStatus)
-// 	// fieldStatusをfieldに、、
+	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`) VALUES ('%d', '%d', '%s'), matchID, localTeamID1, globalTeamID1")
 
-// 	match := &Match{
-// 		// FieldStatus:    fieldStatus,
-// 		Field:          field,
-// 		TurnMillis:     turnMillis,
-// 		IntervalMillis: intervalMillis,
-// 		StartsAt:       startsAt,
-// 		Turns:          turns,
-// 		// 型: 値,
-// 	}
-// 	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
+	field := &field.Field{}
+	field.InitField(fieldStatus)
+	// fieldStatusをfieldに、、
 
-// 	g.Matches[matchID] = match
-// 	// matchIDをkeyにしてmap(Matches)に値(match)をセット
+	match := &Match{
+		// FieldStatus:    fieldStatus,
+		Field:          field,
+		TurnMillis:     turnMillis,
+		IntervalMillis: intervalMillis,
+		StartsAt:       startsAt,
+		Turns:          turns,
+		// 型: 値,
+	}
+	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
 
-// 	match.StartAutoTurnUpdate()
+	g.Matches[matchID] = match
+	// matchIDをkeyにしてmap(Matches)に値(match)をセット
 
-// 	return matchID, nil
-// 	// matchIDを関数の戻り値にする
-// }
+	match.StartAutoTurnUpdate()
+
+	return matchID, nil
+	// matchIDを関数の戻り値にする
+}
 
 // GetRemainingMSecToTheTransitionOnTurn は nターン終了時までの時間を計算する関数
 func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) int {
