@@ -213,7 +213,6 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 }
 
 // DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply に保存します
-// OK
 func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int) []int {
 	// isApply を初期化
 	isApply := make([]int, len(updateActions))
@@ -261,7 +260,6 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 }
 
 // ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
-// OK
 func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, isApply int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
@@ -383,44 +381,6 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction)
 	// f.Turn+1 ターン目の行動情報を記録する
 	f.ActionHistories = append(f.ActionHistories, ActionHistory{AgentActionHistories: agentActionHistories})
 }
-
-// 旧ActAgents (削除予定)
-
-// ActAgents はエージェントの行動を指定し、フィールドを変更します。
-// func (f *Field) ActAgents(updateActions []*apispec.UpdateAction) error {
-// 	// この座標を行動先に選んだエージェントの数
-// 	var DistinationCount [][]int
-
-// 	for i := 0; i < len(updateActions); i++ {
-// 		for j := 0; j < len(f.Agents); j++ {
-// 			if updateActions[i].AgentID == f.Agents[j].ID {
-// 				x := updateActions[i].DX + f.Agents[j].X
-// 				y := updateActions[i].DY + f.Agents[j].Y
-// 				if DistinationCount[y][x] == 1 {
-// 					// 動かす
-// 					if updateActions[i].Type == "move" {
-// 						if f.Cells[y][x].TiledBy != updateActions[i].AgentID && f.Cells[y][x].TiledBy != 0 {
-// 							continue
-// 						}
-// 						f.Cells[y][x].TiledBy = updateActions[i].AgentID
-// 						f.Agents[j].X += updateActions[i].DX
-// 						f.Agents[j].Y += updateActions[i].DY
-// 					} else if updateActions[i].Type == "remove" {
-// 						if f.Cells[y][x].TiledBy == updateActions[i].AgentID || f.Cells[y][x].TiledBy == 0 {
-// 							continue
-// 						}
-// 						f.Cells[y][x].TiledBy = updateActions[i].AgentID
-// 					} else if updateActions[i].Type == "stay" {
-// 						continue
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	// 範囲外にアクセスしようとしたとき err(error型) を返すようにしてほしい
-// 	return nil
-// }
 
 // GetFieldEasyToSee は見やすいフィールド情報を返します
 func (f Field) GetFieldEasyToSee() [][]string {
