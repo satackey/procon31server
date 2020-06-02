@@ -6,7 +6,7 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
-func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction) {
+func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
@@ -202,14 +202,16 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction) {
 	}
 	isValid[11] = false
 
-	return f, isValid, updateActions
+	updateActionIDs := []int{3,3,3,3,3,3,4,4,4,4,4,4}
+
+	return f, isValid, updateActions, updateActionIDs
 }
 
 func TestActAgents(t *testing.T) {
-	result, isValid, updateActions := SetDataForTest()
-	expected, _, _ := SetDataForTest()
+	result, isValid, updateActions, updateActionIDs := SetDataForTest()
+	expected, _, _, _ := SetDataForTest()
 
-	result.ActAgents(isValid, updateActions)
+	result.ActAgents(isValid, updateActions, updateActionIDs)
 	// todo: expectedを変更する
 	expected.ActionHistories = []ActionHistory{
 		{},
@@ -389,6 +391,18 @@ func TestActAgents(t *testing.T) {
 			}
 		}
 	}
+	if len(result.Agents) != len(expected.Agents) {
+		t.Fatalf("\nlen(result.Agents): %d\nlen(expected.Agents): %d\n", len(result.Agents), len(expected.Agents))
+	}
+	for resultKey, resultValue := range result.Agents {
+		expectedValue, isExist := expected.Agents[resultKey]
+		if isExist == false {
+			t.Fatalf("\nkey: %d\nresult.Agents[key] is exist, But expected.Agents[key] is not exist.\n", resultKey)
+		}
+		if resultValue != expectedValue {
+			t.Fatalf("\nkey: %d\nresult.Agents[key]: %+v\nexpected.Agents[key]: %+v\n", resultKey, resultValue, expectedValue)
+		}
+	}
 
 	// まだまだチェックする項目は山ほどあるぜ！？
 
@@ -401,7 +415,7 @@ func TestActAgents(t *testing.T) {
 }
 
 func TestConvertIntoHistory(t *testing.T) {
-	f, isValid, updateActions := SetDataForTest()
+	f, isValid, updateActions, _ := SetDataForTest()
 
 	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
 	isApply := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
@@ -464,7 +478,7 @@ func TestConvertIntoHistory(t *testing.T) {
 }
 
 func TestDetermineIfApplied(t *testing.T) {
-	f, isValid, updateActions := SetDataForTest()
+	f, isValid, updateActions, _ := SetDataForTest()
 
 	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
 
@@ -492,7 +506,7 @@ func TestDetermineIfApplied(t *testing.T) {
 }
 
 func TestCellSelectedTimesCount(t *testing.T) {
-	f, isValid, updateActions := SetDataForTest()
+	f, isValid, updateActions, _ := SetDataForTest()
 
 	result := f.RecordCellSelectedAgents(isValid, updateActions)
 
