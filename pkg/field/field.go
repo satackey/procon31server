@@ -34,6 +34,12 @@ type AgentActionHistory struct {
 	Apply   int
 }
 
+// UpdateAction2 は行動情報がどのチームによるものなのかを表します
+type UpdateAction2 struct {
+	*apispec.UpdateAction
+	TeamID int
+}
+
 // New は初期化された Field を返します
 func New() *Field {
 	return &Field{
@@ -184,6 +190,18 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 		}
 	}
 	return Sum
+}
+
+// MakeUpdateAction2s は updateActions と updateActionIDs をまとめて返します
+func (f *Field) MakeUpdateAction2s(updateActions []*apispec.UpdateAction, updateActionIDs []int) []*UpdateAction2 {
+	updateAction2s := make([]*UpdateAction2, len(updateActions))
+	for i := range updateActions {
+		updateAction2s[i] = &UpdateAction2{
+			TeamID: updateActionIDs[i],
+			UpdateAction: updateActions[i],
+		}
+	}
+	return updateAction2s
 }
 
 // RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報の要素番号を記録します
@@ -350,7 +368,10 @@ func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
-func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction) {
+func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction, updateActionIDs []int) {
+	// updateActionIDs []int をもらって
+	// updateAction2s []*UpdateAction2 をつくる
+	updateAction2s := f.MakeUpdateAction2s(updateActions, updateActionIDs)
 
 	// 行動を精査します
 	// もうやったのでIsValidは信用していいデータらしい。
