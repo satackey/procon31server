@@ -71,43 +71,33 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	sql := fmt.Sprintf("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`) VALUES (NULL, '%d', '%d', '%d', '%d')", startsAt, turnMillis, intervalMillis, turns)
+	fieldJson := "{}"
+
+	sql := fmt.Sprintf("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, '%d', '%d', '%d', '%d', '%s')", startsAt, turnMillis, intervalMillis, turns, fieldJson)
 	creatematch, err := g.DB.Query(sql)
 	if err != nil {
-		return 0, err // 取得に失敗
+		return 0, fmt.Errorf("データベースに接続できませんでした: %w", err)
 	}
 
 	var matchID int
 	for creatematch.Next() {
 		if err := creatematch.Scan(&matchID); err != nil {
-			return 0, err // 情報抽出に失敗
+			return 0, fmt.Errorf("情報の抽出に失敗しました: %w", err)
 		}
 	}
 
-	localTeamID1 := matchID * 2
-	localTeamID2 := localTeamID1 + 1
-
-	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`) VALUES ('%d', '%d', '%s'), matchID, localTeamID1, globalTeamID1")
+	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`) VALUES ('%d', NULL, '%s'), ('%d', NULL, '%s')", matchID, globalTeamID1, matchID, globalTeamID2)
+	_, err = g.DB.Query(sql)
+	if err != nil {
+		// return 0, err // 取得に失敗
+		return 0, fmt.Errorf("データベースに接続できませんでした: %w", err)
+	}
 
 	field := &field.Field{}
 	field.InitField(fieldStatus)
 	// fieldStatusをfieldに、、
 
-	match := &Match{
-		// FieldStatus:    fieldStatus,
-		Field:          field,
-		TurnMillis:     turnMillis,
-		IntervalMillis: intervalMillis,
-		StartsAt:       startsAt,
-		Turns:          turns,
-		// 型: 値,
-	}
-	// FieldStatus, 各ターンの時間, ターン数をGameMasterで保管
-
-	g.Matches[matchID] = match
-	// matchIDをkeyにしてmap(Matches)に値(match)をセット
-
-	match.StartAutoTurnUpdate()
+	// match.StartAutoTurnUpdate()
 
 	return matchID, nil
 	// matchIDを関数の戻り値にする
@@ -175,23 +165,27 @@ func (g *GameMaster) RegisterTeam(globalTeamID string, name string) error {
 		// エラー
 	}
 	// 同じチームIDを登録しようとしていたらエラー
+
 	sql := fmt.Sprintf("INSERT INTO `teams` (`global_id`, `name`) VALUES ('%s', '%s')", globalTeamID, name)
 	_, err := g.DB.Query(sql)
-	return err
+	if err != nil {
+		return fmt.Errorf("チーム登録に失敗しました: %w", err)
+	}
+	return nil
 }
 
 func (g *GameMaster) TeamExists(globalTeamID string) (bool, error) {
 	sql := fmt.Sprintf("SELECT global_id FROM `teams` WHERE `global_id` = '%s'", globalTeamID)
 	teams, err := g.DB.Query(sql)
 	if err != nil {
-		return false, err // 取得に失敗しましたとか情報を加える
+		return false, fmt.Errorf("取得に失敗しました: %w", err)
 	}
 	// dbに存在を問い合わせる
 
 	for teams.Next() {
 		var queriedGlobalTeamID string
 		if err := teams.Scan(&queriedGlobalTeamID); err != nil {
-			return false, err // 情報の抽出に失敗しました
+			return false, fmt.Errorf("情報の抽出に失敗しました: %w", err)
 		}
 
 		if globalTeamID == queriedGlobalTeamID {
@@ -233,7 +227,7 @@ func (g *GameMaster) GetMatchesByGlobalTeamID(globalTeamID string) (*apispec.Mat
 func (g *GameMaster) ConnectDB() error {
 	db, err := sql.Open("mysql", "procon31server:password@tcp(mysql:3306)/procon31")
 	if err != nil {
-		return fmt.Errorf("データベースに接続できませんでした: %s", err)
+		return fmt.Errorf("データベースに接続できませんでした: %w", err)
 	}
 	// defer db.Close()
 	g.DB = db
