@@ -298,37 +298,37 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 }
 
 // ActuallyActAgent は マジで行動情報に基づいてフィールド情報を更新します
-func (f *Field) ActuallyActAgent(updateAction *apispec.UpdateAction) {
-	switch updateAction.Type {
+func (f *Field) ActuallyActAgent(updateAction2 *UpdateAction2) {
+	switch updateAction2.Type {
 	case "move":
-		f.ActMove(updateAction)
+		f.ActMove(updateAction2)
 	case "remove":
-		f.ActRemove(updateAction)
+		f.ActRemove(updateAction2)
 	case "stay":
-		f.ActStay(updateAction)
+		f.ActStay(updateAction2)
 	case "put":
-		f.ActPut(updateAction)
+		f.ActPut(updateAction2)
 	}
 }
 
 // ActMove は type = "move" のとき ActuallyActAgent により実行されます
-func (f *Field) ActMove(updateAction *apispec.UpdateAction) {
+func (f *Field) ActMove(updateAction2 *UpdateAction2) {
 	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction.AgentID].X + updateAction.DX
-	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+	x := f.Agents[updateAction2.AgentID].X + updateAction2.DX
+	y := f.Agents[updateAction2.AgentID].Y + updateAction2.DY
 	// エージェントの座標を変える
-	f.Agents[updateAction.AgentID].X = x
-	f.Agents[updateAction.AgentID].Y = y
+	f.Agents[updateAction2.AgentID].X = x
+	f.Agents[updateAction2.AgentID].Y = y
 	// 移動先の座標を自陣の城壁に変える
-	f.Cells[y][x].TiledBy = f.Agents[updateAction.AgentID].TeamID
+	f.Cells[y][x].TiledBy = f.Agents[updateAction2.AgentID].TeamID
 	f.Cells[y][x].Status = "wall"
 }
 
 // ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
-func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
+func (f *Field) ActRemove(updateAction2 *UpdateAction2) {
 	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction.AgentID].X + updateAction.DX
-	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+	x := f.Agents[updateAction2.AgentID].X + updateAction2.DX
+	y := f.Agents[updateAction2.AgentID].Y + updateAction2.DY
 	// 城壁 (wall) を除去する、つまりfreeに…
 	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
 	// 後回し！！！！！！！！！！！！！
@@ -342,25 +342,25 @@ func (f *Field) ActRemove(updateAction *apispec.UpdateAction) {
 }
 
 // ActStay は type = "stay" のとき ActuallyActAgent により実行されます
-func (f *Field) ActStay(updateAction *apispec.UpdateAction) {
+func (f *Field) ActStay(updateAction2 *UpdateAction2) {
 	// 特に判定することもない
 	// Q.何故関数化した？ A.見栄えがいいから
 }
 
 // ActPut は type = "put" のとき ActuallyActAgent により実行されます
-func (f *Field) ActPut(updateAction *apispec.UpdateAction) {
+func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	// 移動先のx, y座標を取得する
-	x := updateAction.X
-	y := updateAction.Y
+	x := updateAction2.X
+	y := updateAction2.Y
 	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
 	// newAgentID の決め方を考えよう
 	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
-	newAgentID := updateAction.AgentID + 1
-	for _, isExistKey := f.Agents[updateAction.AgentID]; isExistKey == true; newAgentID++ {
+	newAgentID := updateAction2.AgentID + 1
+	for _, isExistKey := f.Agents[updateAction2.AgentID]; isExistKey == true; newAgentID++ {
 	}
 	f.Agents[newAgentID] = &Agent{
 		ID:     newAgentID,
-		TeamID: f.Agents[updateAction.AgentID].TeamID,
+		TeamID: updateAction2.TeamID,
 		X:      x,
 		Y:      y,
 		field:  f,
@@ -391,7 +391,7 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction,
 		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
 		// apply == 1 なら実際に動かす
 		if agentActionHistories[i].Apply == 1 {
-			f.ActuallyActAgent(updateAction)
+			f.ActuallyActAgent(updateAction2s[i])
 		}
 	}
 	// f.ActionHistories[i].AgentActionHistories に agentActionHistories を代入
