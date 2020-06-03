@@ -202,7 +202,7 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	}
 	isValid[11] = false
 
-	updateActionIDs := []int{3,3,3,3,3,3,4,4,4,4,4,4}
+	updateActionIDs := []int{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4}
 
 	return f, isValid, updateActions, updateActionIDs
 }
@@ -260,7 +260,7 @@ func TestActAgents(t *testing.T) {
 				{
 					AgentID: 0,
 					DX:      0,
-					DY:      1,
+					DY:      0,
 					X:       1,
 					Y:       3,
 					Type:    "put",
@@ -277,8 +277,6 @@ func TestActAgents(t *testing.T) {
 					Turn:    1,
 					Apply:   1,
 				},
-
-
 
 				{
 					AgentID: 403,
@@ -353,18 +351,31 @@ func TestActAgents(t *testing.T) {
 	expected.Cells[7][1].Status = "wall"
 
 	expected.Agents[1] = &Agent{
-		ID: 1,
+		ID:     1,
 		TeamID: 3,
-		X: 1,
-		Y: 3,
-		field: expected,
+		X:      1,
+		Y:      3,
+		field:  expected,
 	}
 	expected.Agents[2] = &Agent{
-		ID: 2,
+		ID:     2,
 		TeamID: 4,
-		X: 3,
-		Y: 7,
-		field: expected,
+		X:      3,
+		Y:      7,
+		field:  expected,
+	}
+	expected.Agents[308].X = 0
+	expected.Agents[308].Y = 4
+	expected.Agents[307].X = 1
+	expected.Agents[307].Y = 7
+	expected.Agents[405].X = 1
+	expected.Agents[405].Y = 6
+	expected.Agents[406].X = 0
+	expected.Agents[406].Y = 7
+
+	// Test用 ポインタを合わせる
+	for i := range expected.Agents {
+		expected.Agents[i].field = result
 	}
 
 	// 各要素に対して判定する
@@ -377,7 +388,7 @@ func TestActAgents(t *testing.T) {
 	if result.Turn != expected.Turn {
 		t.Fatalf("\nresult.Turn: %d\nexpected.Turn: %d\n", result.Turn, expected.Turn)
 	}
-	
+
 	if len(result.Cells) != len(expected.Cells) {
 		t.Fatalf("\nlen(result.Cells): %d\nlen(expected.Cells): %d\n", len(result.Cells), len(expected.Cells))
 	}
@@ -392,6 +403,9 @@ func TestActAgents(t *testing.T) {
 		}
 	}
 	if len(result.Agents) != len(expected.Agents) {
+		for i := range result.Agents {
+			t.Logf("%+v\n", result.Agents[i])
+		}
 		t.Fatalf("\nlen(result.Agents): %d\nlen(expected.Agents): %d\n", len(result.Agents), len(expected.Agents))
 	}
 	for resultKey, resultValue := range result.Agents {
@@ -399,7 +413,7 @@ func TestActAgents(t *testing.T) {
 		if isExist == false {
 			t.Fatalf("\nkey: %d\nresult.Agents[key] is exist, But expected.Agents[key] is not exist.\n", resultKey)
 		}
-		if resultValue != expectedValue {
+		if *resultValue != *expectedValue {
 			t.Fatalf("\nkey: %d\nresult.Agents[key]: %+v\nexpected.Agents[key]: %+v\n", resultKey, resultValue, expectedValue)
 		}
 	}
@@ -412,6 +426,83 @@ func TestActAgents(t *testing.T) {
 	}
 
 	t.Log("Test is finished.")
+}
+
+func TestActuallyActAgent(t *testing.T) {
+	result, isValid, updateActions, updateActionIDs := SetDataForTest()
+	expected, _, _, _ := SetDataForTest()
+
+	t.Logf("%+v\n", len(result.Agents))
+
+	selectedAgentsIndex := result.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := result.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
+	for i := range updateActions {
+		agentActionHistories[i] = result.ConvertIntoHistory(isValid[i], updateActions[i], isApply[i])
+	}
+	updateAction2s := result.MakeUpdateAction2s(updateActions, updateActionIDs)
+
+	result.ActuallyActAgent(updateAction2s[3])
+	result.ActuallyActAgent(updateAction2s[4])
+	result.ActuallyActAgent(updateAction2s[5])
+	result.ActuallyActAgent(updateAction2s[8])
+	result.ActuallyActAgent(updateAction2s[9])
+	result.ActuallyActAgent(updateAction2s[10])
+
+	expected.Agents[308].X = 0
+	expected.Agents[308].Y = 4
+	expected.Cells[4][0].TiledBy = 3
+	expected.Cells[4][0].Status = "wall"
+	expected.Agents[307].X = 1
+	expected.Agents[307].Y = 7
+	expected.Cells[7][1].TiledBy = 3
+	expected.Cells[7][1].Status = "wall"
+	expected.Agents[405].X = 1
+	expected.Agents[405].Y = 6
+	expected.Cells[6][1].TiledBy = 4
+	expected.Cells[6][1].Status = "wall"
+	expected.Agents[406].X = 0
+	expected.Agents[406].Y = 7
+	expected.Cells[7][0].TiledBy = 4
+	expected.Cells[7][0].Status = "wall"
+
+	expected.Agents[1] = &Agent{
+		ID:     1,
+		TeamID: 3,
+		X:      1,
+		Y:      3,
+		field:  expected,
+	}
+	expected.Agents[2] = &Agent{
+		ID:     2,
+		TeamID: 4,
+		X:      3,
+		Y:      7,
+		field:  expected,
+	}
+
+	for y := range result.Cells {
+		for x := range result.Cells[y] {
+			if result.Cells[y][x].TiledBy != expected.Cells[y][x].TiledBy {
+				t.Fatalf("\ny: %d, x:%d\nresult.Cells[y][x].TiledBy: %d\nexpected.Cells[y][x].TiledBy: %d\n", y, x, result.Cells[y][x].TiledBy, expected.Cells[y][x].TiledBy)
+			}
+			if result.Cells[y][x].Status != expected.Cells[y][x].Status {
+				t.Fatalf("\ny: %d, x:%d\nresult.Cells[y][x].Status: %s\nexpected.Cells[y][x].Status: %s\n", y, x, result.Cells[y][x].Status, expected.Cells[y][x].Status)
+			}
+		}
+	}
+	if len(result.Agents) != len(expected.Agents) {
+		t.Fatalf("\nlen(result.Agents): %d\nlen(expected.Agents): %d\n", len(result.Agents), len(expected.Agents))
+	}
+	for key := range result.Agents {
+		if expected.Agents[key] == nil {
+			t.Fatalf("\nkey: %d\nexpected.Agents[key] is not exist\n", key)
+		}
+		if *result.Agents[key] != *expected.Agents[key] {
+			t.Fatalf("\nkey: %d\nresult.Agents[key]: %+v\nexpected.Agents[key]: %+v\n", key, result.Agents[key], expected.Agents[key])
+		}
+	}
+
 }
 
 func TestConvertIntoHistory(t *testing.T) {

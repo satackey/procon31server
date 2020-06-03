@@ -197,7 +197,7 @@ func (f *Field) MakeUpdateAction2s(updateActions []*apispec.UpdateAction, update
 	updateAction2s := make([]*UpdateAction2, len(updateActions))
 	for i := range updateActions {
 		updateAction2s[i] = &UpdateAction2{
-			TeamID: updateActionIDs[i],
+			TeamID:       updateActionIDs[i],
 			UpdateAction: updateActions[i],
 		}
 	}
@@ -224,7 +224,7 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 			}
 			selectedAgents[y][x] = append(selectedAgents[y][x], i)
 		}
-		
+
 	}
 
 	return selectedAgents
@@ -355,9 +355,20 @@ func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
 	// newAgentID の決め方を考えよう
 	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
-	newAgentID := updateAction2.AgentID + 1
-	for _, isExistKey := f.Agents[updateAction2.AgentID]; isExistKey == true; newAgentID++ {
+	newAgentID := 1
+	for {
+		_, isExistKey := f.Agents[newAgentID]
+		fmt.Printf("%d ", newAgentID)
+		if isExistKey {
+			fmt.Printf("あるよ %+v\n", f.Agents[newAgentID])
+		} else {
+			fmt.Printf("ないよ\n")
+			break
+		}
+		newAgentID++
 	}
+	fmt.Printf("やったあ！！！！！！\n")
+
 	f.Agents[newAgentID] = &Agent{
 		ID:     newAgentID,
 		TeamID: updateAction2.TeamID,
