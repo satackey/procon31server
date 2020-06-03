@@ -17,12 +17,8 @@ import (
 
 // Match は
 type Match struct {
-	FieldStatus    *apispec.FieldStatus
-	Field          *field.Field
-	TurnMillis     int
-	IntervalMillis int
-	StartsAt       int
-	Turns          int
+	ID int
+	DB *sql.DB
 }
 
 // Team は
@@ -43,6 +39,35 @@ type GameMaster struct {
 	// LocalTeamIDs map[int]int
 	GlobalTeamIDsByLocalTeamID map[int]string
 	DB                         *sql.DB
+}
+
+func getMatch(db *sql.DB, id int) (*Match, error) {
+	// matchが存在するか調べる
+	sql := fmt.Sprintf("SELECT * FROM `matches` WHERE `id` = '%d'", id)
+	match, err := db.Query(sql)
+	if err != nil {
+		return nil, fmt.Errorf("データベースに接続できませんでした: %w", err)
+	}
+
+	for match.Next() {
+		var queriedid int
+		if err := match.Scan(&queriedid); err != nil {
+			return nil, fmt.Errorf("情報の抽出に失敗しました: %w", err)
+		}
+
+		if id == queriedid {
+			result := &Match{
+				ID: id,
+				DB: db,
+			}
+
+			return result, nil
+		}
+	}
+
+	message := fmt.Sprintf("id: %dが存在しません", id)
+	return &Match{}, errors.New(message)
+
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
@@ -104,16 +129,31 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 }
 
 // GetRemainingMSecToTheTransitionOnTurn は nターン終了時までの時間を計算する関数
-func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) int {
+func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
+	// m.ID
 	now := time.Now()
 	nowMillis := now.UnixNano() / int64(time.Millisecond)
-	startsAtMillis := int64(m.StartsAt) * 1000
+
+	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.ID)
+	matches, err := m.DB.Query(sql)
+	if err != nil {
+		return 0, fmt.Errorf("取得に失敗しました: %w", err)
+	}
+
+	var StartsAt, TurnMillis, IntervalMillis int
+	for matches.Next() {
+		if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+			return 0, fmt.Errorf("取得に失敗しました: %w", err)
+		}
+	}
+
+	startsAtMillis := int64(StartsAt) * 1000
 	n64 := int64(n)
 	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
-	endtime := (startsAtMillis + int64(m.TurnMillis)*n64 + int64(m.IntervalMillis)*(n64-1)) - nowMillis
+	endtime := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1)) - nowMillis
 	// 求めたいもの = (m.StartsAt /* s */ + m.TurnMillis /* ms */) - いま /* s */
-	return int(endtime)
+	return int(endtime), nil
 }
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
