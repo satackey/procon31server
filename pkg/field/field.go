@@ -373,6 +373,12 @@ func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	}
 }
 
+// CleanUpCellsFormerlyWall は以前は壁だった細胞を片付けます
+// (f.Cells[y][x].Status が free になるか position になるか決めます)
+func (f *Field) CleanUpCellsFormerlyWall() {
+	
+}
+
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
 func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction, updateActionIDs []int) {
 	// updateActionIDs []int をもらって
@@ -400,6 +406,8 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction,
 			f.ActuallyActAgent(updateAction2s[i])
 		}
 	}
+	// removeなどによって除去された城壁があるので、エリアを再計算して正しいセルの状態にする
+	f.CleanUpCellsFormerlyWall()
 	// f.ActionHistories[i].AgentActionHistories に agentActionHistories を代入
 	// もし0ターン目ならActionHistories[0]は使わないので空けておく
 	if f.Turn == 0 && len(f.ActionHistories) == 0 {
