@@ -18,6 +18,7 @@ type Field struct {
 	ActionHistories []ActionHistory
 }
 
+// ActionHistory は各エージェントの行動履歴を表します
 type ActionHistory struct {
 	AgentActionHistories []AgentActionHistory
 }
@@ -78,10 +79,11 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 
 // CalcPoint は現在のフィールドの指定されたチームIDの得点を計算します
 func (f *Field) CalcPoint(teamID int) int {
-	return f.CalcTilePoint(teamID) + f.CalcAreaPoint(teamID)
+	return f.CalcWallPoint(teamID) + f.CalcAreaPoint(teamID)
 }
 
-func (f *Field) CalcTilePoint(teamID int) int {
+// CalcWallPoint は現在のフィールドの指定されたチームIDの城壁の点数を計算します
+func (f *Field) CalcWallPoint(teamID int) int {
 	sum := 0
 	for _ /*y*/, fieldRow := range f.Cells {
 		for _ /*x*/, cell := range fieldRow {
@@ -108,7 +110,8 @@ func (f Field) dfs(vx int, vy int) {
 }
 */
 
-//ある座標がわかっているときにそのtiledbyがわかる関数が欲しい！！
+// SearchTiledBy は指定された座標の tiledby を返します
+// ある座標がわかっているときにそのtiledbyがわかる関数が欲しい！！
 func (f *Field) SearchTiledBy(x, y int) int {
 	var res int
 	res = f.Cells[y][x].TiledBy
@@ -116,10 +119,7 @@ func (f *Field) SearchTiledBy(x, y int) int {
 	return res
 }
 
-//左上から調べていく…？
-//外側でも探索してNGなセルをみつけておく
-//エリア　中身囲まれている
-//たいる　自陣のセル
+// CalcAreaPoint は 現在のフィールドの指定されたチームIDの城壁の点数を計算します
 func (f *Field) CalcAreaPoint(teamID int) int {
 	Sum := 0
 
@@ -357,17 +357,12 @@ func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
 	newAgentID := 1
 	for {
-		_, isExistKey := f.Agents[newAgentID]
-		fmt.Printf("%d ", newAgentID)
-		if isExistKey {
-			fmt.Printf("あるよ %+v\n", f.Agents[newAgentID])
-		} else {
-			fmt.Printf("ないよ\n")
+		_, keyExist := f.Agents[newAgentID]
+		if !keyExist {
 			break
 		}
 		newAgentID++
 	}
-	fmt.Printf("やったあ！！！！！！\n")
 
 	f.Agents[newAgentID] = &Agent{
 		ID:     newAgentID,
