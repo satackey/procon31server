@@ -6,7 +6,7 @@ import (
 	"github.com/satackey/procon31server/pkg/apispec"
 )
 
-func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction, []int) {
+func GetTestCase01() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	f := New()
 
 	// 本来は 12^2 以上 24^2 以下のサイズである
@@ -208,8 +208,8 @@ func SetDataForTest() (*Field, []bool, []*apispec.UpdateAction, []int) {
 }
 
 func TestActAgents(t *testing.T) {
-	result, isValid, updateActions, updateActionIDs := SetDataForTest()
-	expected, _, _, _ := SetDataForTest()
+	result, isValid, updateActions, updateActionIDs := GetTestCase01()
+	expected, _, _, _ := GetTestCase01()
 
 	result.ActAgents(isValid, updateActions, updateActionIDs)
 	// todo: expectedを変更する
@@ -417,8 +417,28 @@ func TestActAgents(t *testing.T) {
 			t.Fatalf("\nkey: %d\nresult.Agents[key]: %+v\nexpected.Agents[key]: %+v\n", resultKey, resultValue, expectedValue)
 		}
 	}
+	if len(result.Teams) != len(expected.Teams) {
+		t.Fatalf("\nlen(result.Teams): %d\nlen(expected.Teams): %d\n", len(result.Teams), len(expected.Teams))
+	}
+	for i := range result.Teams {
+		if *result.Teams[i] != *expected.Teams[i] {
+			t.Fatalf("\ni: %d\nresult.Teams[i]: %+v\nexpected.Teams[i]: %+v\n", i, *result.Teams[i], *expected.Teams[i])
+		}
+	}
+	if len(result.ActionHistories) != len(expected.ActionHistories) {
+		t.Fatalf("\nlen(result.ActionHistories): %d\nlen(expected.ActionHistories): %d\n", len(result.ActionHistories), len(expected.ActionHistories))
+	}
+	for i := range result.ActionHistories {
+		if len(result.ActionHistories[i].AgentActionHistories) != len(expected.ActionHistories[i].AgentActionHistories) {
+			t.Fatalf("\nlen(result.ActionHistories[i].AgentActionHistories): %d\nlen(expected.ActionHistories[i].AgentActionHistories): %d\n", len(result.ActionHistories[i].AgentActionHistories), len(expected.ActionHistories[i].AgentActionHistories))
+		}
+		for j := range result.ActionHistories[i].AgentActionHistories {
+			if result.ActionHistories[i].AgentActionHistories[j] != expected.ActionHistories[i].AgentActionHistories[j] {
+				t.Fatalf("\ni: %d, j: %d\nresult.ActionHistories[i].AgentActionHistories[j]: %+v\nexpected.ActionHistories[i].AgentActionHistories[j]: %+v\n", i, j, result.ActionHistories[i].AgentActionHistories[j], expected.ActionHistories[i].AgentActionHistories[j])
+			}
+		}
+	}
 
-	// まだまだチェックする項目は山ほどあるぜ！？
 
 	// テストが成功しているなら褒める
 	if t.Failed() == false {
@@ -429,8 +449,8 @@ func TestActAgents(t *testing.T) {
 }
 
 func TestActuallyActAgent(t *testing.T) {
-	result, isValid, updateActions, updateActionIDs := SetDataForTest()
-	expected, _, _, _ := SetDataForTest()
+	result, isValid, updateActions, updateActionIDs := GetTestCase01()
+	expected, _, _, _ := GetTestCase01()
 
 	t.Logf("%+v\n", len(result.Agents))
 
@@ -481,6 +501,11 @@ func TestActuallyActAgent(t *testing.T) {
 		field:  expected,
 	}
 
+	// テスト用に Field.Agents[].field のアドレスを合わせる
+	for i := range expected.Agents {
+		expected.Agents[i].field = result
+	}
+
 	for y := range result.Cells {
 		for x := range result.Cells[y] {
 			if result.Cells[y][x].TiledBy != expected.Cells[y][x].TiledBy {
@@ -506,7 +531,7 @@ func TestActuallyActAgent(t *testing.T) {
 }
 
 func TestConvertIntoHistory(t *testing.T) {
-	f, isValid, updateActions, _ := SetDataForTest()
+	f, isValid, updateActions, _ := GetTestCase01()
 
 	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
 	isApply := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
@@ -569,7 +594,7 @@ func TestConvertIntoHistory(t *testing.T) {
 }
 
 func TestDetermineIfApplied(t *testing.T) {
-	f, isValid, updateActions, _ := SetDataForTest()
+	f, isValid, updateActions, _ := GetTestCase01()
 
 	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
 
@@ -597,7 +622,7 @@ func TestDetermineIfApplied(t *testing.T) {
 }
 
 func TestCellSelectedTimesCount(t *testing.T) {
-	f, isValid, updateActions, _ := SetDataForTest()
+	f, isValid, updateActions, _ := GetTestCase01()
 
 	result := f.RecordCellSelectedAgents(isValid, updateActions)
 
