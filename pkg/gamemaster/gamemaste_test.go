@@ -127,3 +127,51 @@ func TestCreareMatch(t *testing.T) {
 		return
 	}
 }
+
+func TestGetMatch(t *testing.T) {
+	gm := &GameMaster{}
+	err := gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	err = gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	_, err = GetMatch(gm.DB, 6)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
+	return
+}
+
+func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
+	gm := &GameMaster{}
+	err := gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	m, err := GetMatch(gm.DB, 6)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
+	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(2)
+	if err != nil {
+		t.Fatalf("計算失敗: %s", err)
+		return
+	}
+	t.Log(sum)
+	// 結果は要検証
+	// この方法を使うときは -v オプションを付けないと出力されないぞ
+	return
+}
+
+// -count=1 オプションはキャッシュなしでtestしてくれるぞ
