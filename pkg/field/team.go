@@ -1,6 +1,6 @@
 package field
 
-// Team ‚Íƒ`[ƒ€‚Ìî•ñ‚ğ•\‚µ‚Ü‚·
+// Team ã¯ãƒãƒ¼ãƒ ã®æƒ…å ±ã‚’è¡¨ã—ã¾ã™
 type Team struct {
 	ID int
 }
