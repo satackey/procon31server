@@ -373,10 +373,54 @@ func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	}
 }
 
+// HogeHogeFunction はteamIDの城壁の内部にあるセルを記録します
+func (f *Field) HogeHogeFunction(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
+	// 途中ではみ出たらfalse, 全ての更新を無かったことにする。
+	return false
+	// 途中ではみ出ずに終了したら囲われているという事なので、trueを返し全ての更新を適用する。
+	return true
+}
+
 // CleanUpCellsFormerlyWall は以前は壁だった細胞を片付けます
 // (f.Cells[y][x].Status が free になるか position になるか決めます)
 func (f *Field) CleanUpCellsFormerlyWall() {
-	
+	seen := make([][]bool, f.Height)
+	for y := range seen {
+		seen[y] = make([]bool, f.Width)
+		for x := range seen[y] {
+			seen[y][x] = false
+		}
+	}
+
+	for y := range seen {
+		for x := range seen[y] {
+			if seen[y][x] == true {
+				continue
+			}
+			if f.Cells[y][x].Status == "wall" {
+				continue
+			}
+			// 各チームの城壁で囲まれているかチェック
+			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
+			var isAreaBy map[int][][]bool
+			var kakowaretaka map[int]bool
+			for _, team := range f.Teams {
+				
+				kakowaretaka[team.ID] = f.HogeHogeFunction(team.ID, x, y, &isAreaBy)
+			}
+
+			// 1チームにしか囲われていないのなら
+			// そのチームの陣地である。
+
+			// 2チームともに囲まれているのなら
+			// 片方の領域内で囲めるかどうかで決める。
+
+			// どちらのチームにも囲まれていないのなら
+			// 変更しない。
+
+			// 連結成分をすべてtrueにする、上記の通り変更する
+		}
+	}
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
