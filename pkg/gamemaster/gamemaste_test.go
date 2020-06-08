@@ -175,3 +175,53 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 }
 
 // -count=1 オプションはキャッシュなしでtestしてくれるぞ
+
+// func TestStartAutoUpdate(t *testing.T) {
+// 	gm := &GameMaster{}
+// 	err := gm.ConnectDB()
+// 	if err != nil {
+// 		t.Fatalf("connect 失敗: %s", err)
+// 		return
+// 	}
+
+// 	err = gm.ConnectDB()
+// 	if err != nil {
+// 		t.Fatalf("connect 失敗: %s", err)
+// 		return
+// 	}
+
+// 	m := gm.DB
+// 	err = m.StartAutoUpdate()
+// 	if err != nil {
+// 		t.Fatalf("失敗: %s", err)
+// 		return
+// 	}
+// 	return
+// }
+
+func TestPostAgentActions(t *testing.T) {
+	gm := &GameMaster{}
+	err := gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	err = gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	TestCase := &apispec.UpdateAction{
+		AgentID: 2,
+		DX:      2,
+		DY:      2,
+		Type:    "hoge",
+		X:       2,
+		Y:       2,
+	}
+
+
+	err = gm.PostAgentActions(2, []TestCase)
+}

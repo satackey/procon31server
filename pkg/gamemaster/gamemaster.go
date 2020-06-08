@@ -2,6 +2,7 @@ package gamemaster
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -160,7 +161,7 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
 func (m *Match) StartAutoTurnUpdate() {
 
 	go func() {
-		// time.Sleep(time.Duration(m.GetRemainingMSecToTheTransitionOnTurn(1)) * time.Millisecond)
+		time.Sleep(time.Duration(m.GetRemainingMSecToTheTransitionOnTurn(1)) * time.Millisecond)
 		// 時間を計算する関数を呼び出す
 		// endtime秒後にfield.ActAgents()をしたい
 		// field.ActAgents()
@@ -189,10 +190,20 @@ func (g *GameMaster) PostAgentActions(localTeamID int, UpdateActions []*apispec.
 	}
 	// 存在しないlocalTeamIDを渡されたらエラー、存在していたらlocalTeamID → globalTeamID
 
-	g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID].UpdateActions = UpdateActions
+	// g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID].UpdateActions = UpdateActions
 	// globalTeamID →　Team
 	// Team → localTeamID → joinedMatches
 	// joinedMatches.UpdateActions ←　代入！！
+
+	if ua, err := json.Marshal(UpdateActions); err != nil {
+		return fmt.Errorf("取得に失敗しました: %w", err)
+	}
+
+	sql := fmt.Sprintf("UPDATE `match_teams` SET `update_actions` = %s WHERE `match_teams`.`local_team_id` = %d", ua, localTeamID)
+	_, err := g.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("取得に失敗しました: %w", err)
+	}
 
 	return nil
 }
