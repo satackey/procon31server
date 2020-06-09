@@ -207,6 +207,210 @@ func GetTestCase01() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	return f, isValid, updateActions, updateActionIDs
 }
 
+func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
+	f := New()
+
+	width := 12
+	height := 13
+	// todo: testcase作る
+
+
+	
+	points := [][]int{
+		{4, -5, 0, 0, -1, 4},
+		{-4, -1, 0, -4, -3, -2},
+		{-1, 3, -2, 4, -1, 3},
+		{4, 0, 0, 1, 1, 1},
+		{-2, 3, 2, 5, -2, 0},
+		{-1, 1, 4, 2, -3, 1},
+		{-1, 3, 5, 3, -4, 0},
+		{-4, 0, 2, 1, 2, 2},
+	}
+	cells := make([][]apispec.Cell, height)
+	for i, cellRow := range cells {
+		cells[i] = make([]apispec.Cell, width)
+		for j := range cellRow {
+			cells[i][j].Status = "free"
+			cells[i][j].TeamID = 0
+		}
+	}
+	teams := []apispec.Team{
+		{
+			TeamID: 3,
+			Agents: []apispec.Agent{
+				{
+					AgentID: 303,
+					X:       0,
+					Y:       0,
+				},
+				{
+					AgentID: 307,
+					X:       1,
+					Y:       6,
+				},
+				{
+					AgentID: 308,
+					X:       1,
+					Y:       3,
+				},
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
+		},
+		{
+			TeamID: 4,
+			Agents: []apispec.Agent{
+				{
+					AgentID: 403,
+					X:       2,
+					Y:       1,
+				},
+				{
+					AgentID: 405,
+					X:       0,
+					Y:       7,
+				},
+				{
+					AgentID: 406,
+					X:       1,
+					Y:       7,
+				},
+				{
+					AgentID: 407,
+					X:       5,
+					Y:       7,
+				},
+			},
+			WallPoint: 0,
+			AreaPoint: 0,
+		},
+	}
+	actions := []apispec.FieldStatusAction{}
+
+	fieldStatus := &apispec.FieldStatus{
+		Width:             width,
+		Height:            height,
+		Points:            points,
+		StartedAtUnixtime: 1576800000,
+		Turn:              0,
+		Cells:             cells,
+		Teams:             teams,
+		Actions:           actions,
+	}
+
+	f.InitField(fieldStatus)
+
+	updateActions := []*apispec.UpdateAction{
+		{
+			AgentID: 303,
+			DX:      1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 0,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       2,
+			Y:       1,
+		},
+		{
+			AgentID: 0,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       4,
+			Y:       2,
+		},
+		{
+			AgentID: 308,
+			DX:      -1,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 0,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       1,
+			Y:       3,
+		},
+		{
+			AgentID: 307,
+			DX:      0,
+			DY:      1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 403,
+			DX:      -1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 0,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       4,
+			Y:       2,
+		},
+		{
+			AgentID: 0,
+			DX:      0,
+			DY:      0,
+			Type:    "put",
+			X:       3,
+			Y:       7,
+		},
+		{
+			AgentID: 405,
+			DX:      1,
+			DY:      -1,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 406,
+			DX:      -1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+		{
+			AgentID: 407,
+			DX:      1,
+			DY:      0,
+			Type:    "move",
+			X:       0,
+			Y:       0,
+		},
+	}
+
+	agentCount := len(updateActions)
+	isValid := make([]bool, agentCount)
+	for i := range isValid {
+		isValid[i] = true
+	}
+	isValid[11] = false
+
+	updateActionIDs := []int{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4}
+
+	return f, isValid, updateActions, updateActionIDs
+}
+
 func TestActAgents(t *testing.T) {
 	result, isValid, updateActions, updateActionIDs := GetTestCase01()
 	expected, _, _, _ := GetTestCase01()
