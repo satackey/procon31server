@@ -384,8 +384,8 @@ func (f *Field) IsOutsideField(x int, y int) bool {
 	return false
 }
 
-// HogeHogeFunction はteamIDの城壁の内部にあるセルを記録します
-func (f *Field) HogeHogeFunction(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
+// CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録します
+func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
 	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 	seen := make([][]bool, f.Height)
@@ -431,8 +431,42 @@ func (f *Field) HogeHogeFunction(teamID int, startX int, startY int, isAreaBy *m
 	return true
 }
 
-// FugaFugaFunction はkakowareCount[1]の中で、kakowareCount[0]で囲めるならtrueを返します
-func (f *Field) FugaFugaFunction(teamID int, startX int, startY int, isArea [][]bool) bool {
+// FinalCheckByDFS はSurroundedBy[1]の中で、SurroundedBy[0]で囲めるならtrueを返します
+func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]bool) bool {
+	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
+	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
+	seen := make([][]bool, f.Height)
+	for i := 0; i < f.Height; i ++ {
+		seen[i] = make([]bool, f.Width)
+		for j := 0; j < f.Width; j ++ {
+			seen[i][j] = false
+		}
+	}
+
+	st := stack.New()
+	st.Push([]int{startX, startY})
+	for st.Len() != 0 {
+		xy := st.Pop().([]int)
+		x := xy[0]
+		y := xy[1]
+		for i := 0; i < 8; i ++ {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
+				return false
+			}
+			if isArea[y+dy[i]][x+dx[i]] == false {
+				return false
+			}
+			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" && f.Cells[y+dy[i]][x+dx[i]].TiledBy == teamID {
+				continue
+			}
+			if seen[y+dy[i]][x+dx[i]] == true {
+				continue
+			}
+			st.Push([]int{x+dx[i], y+dy[i]})
+			seen[y+dy[i]][x+dx[i]] = true
+		}
+	}
+
 	return true
 }
 
@@ -441,6 +475,29 @@ func (f *Field) FugaFugaFunction(teamID int, startX int, startY int, isArea [][]
 func (f *Field) PiyoPiyoFunction(teamID int, startX int, startY int, seen *[][]bool) {
 	if teamID == -1 {
 		return
+	}
+	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
+	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
+
+	st := stack.New()
+	st.Push([]int{startX, startY})
+	for st.Len() != 0 {
+		xy := st.Pop().([]int)
+		x := xy[0]
+		y := xy[1]
+		for i := 0; i < 8; i ++ {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
+				fmt.Printf("yabeeeeeeee");
+			}
+			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" {
+				continue
+			}
+			if (*seen)[y+dy[i]][x+dx[i]] == true {
+				continue
+			}
+			st.Push([]int{x+dx[i], y+dy[i]})
+			(*seen)[y+dy[i]][x+dx[i]] = true
+		}
 	}
 }
 
@@ -466,34 +523,34 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			// 各チームの城壁で囲まれているかチェック
 			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
 			var isAreaBy map[int][][]bool
-			kakowareCount := []int{}
+			SurroundedBy := []int{}
 			for _, team := range f.Teams {
 				
-				if f.HogeHogeFunction(team.ID, x, y, &isAreaBy) == true {
-					kakowareCount = append(kakowareCount, team.ID)
+				if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
+					SurroundedBy = append(SurroundedBy, team.ID)
 				}
 			}
 
-			var aaaaa int
+			var teamID int
 
 			// どちらのチームにも囲まれていないのなら変更しない。
 			// 1チームにしか囲われていないのならそのチームの陣地である。
 			// 2チームともに囲まれているのなら片方の領域内で囲めるかどうかで決める。
 
-			switch len(kakowareCount) {
+			switch len(SurroundedBy) {
 			case 0:
-				aaaaa = -1
+				teamID = -1
 			case 1:
-				aaaaa = kakowareCount[0]
+				teamID = SurroundedBy[0]
 			case 2:
-				if f.FugaFugaFunction(kakowareCount[0], x, y, isAreaBy[kakowareCount[1]]) == true {
-					aaaaa = kakowareCount[0]
+				if f.FinalCheckByDFS(SurroundedBy[0], x, y, isAreaBy[SurroundedBy[1]]) == true {
+					teamID = SurroundedBy[0]
 				} else {
-					aaaaa = kakowareCount[1]
+					teamID = SurroundedBy[1]
 				}
 			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
-			f.PiyoPiyoFunction(aaaaa, x, y, &seen)
+			f.PiyoPiyoFunction(teamID, x, y, &seen)
 		}
 	}
 }
