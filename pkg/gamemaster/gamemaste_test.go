@@ -213,7 +213,7 @@ func TestPostAgentActions(t *testing.T) {
 		return
 	}
 
-	TestCase := &apispec.UpdateAction{
+	TestCase1 := &apispec.UpdateAction{
 		AgentID: 2,
 		DX:      2,
 		DY:      2,
@@ -222,6 +222,47 @@ func TestPostAgentActions(t *testing.T) {
 		Y:       2,
 	}
 
+	TestCase2 := &apispec.UpdateAction{
+		AgentID: 2,
+		DX:      2,
+		DY:      2,
+		Type:    "hoge",
+		X:       2,
+		Y:       2,
+	}
 
-	err = gm.PostAgentActions(2, []TestCase)
+	testCase := []*apispec.UpdateAction{TestCase1, TestCase2}
+
+	err = gm.PostAgentActions(2, testCase)
+	if err != nil {
+		t.Fatalf("PostAgentActions 失敗: %s", err)
+		return
+	}
+}
+
+func TestUpdateTurn(t *testing.T) {
+	gm := &GameMaster{}
+	err := gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	err = gm.ConnectDB()
+	if err != nil {
+		t.Fatalf("connect 失敗: %s", err)
+		return
+	}
+
+	m, err := GetMatch(gm.DB, 6)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
+
+	err = m.UpdateTurn()
+	if err != nil {
+		t.Fatalf("UpdateTurn 失敗: %s", err)
+		return
+	}
 }

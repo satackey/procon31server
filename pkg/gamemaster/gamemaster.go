@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,7 +17,7 @@ import (
 
 // Match は
 type Match struct {
-	ID int
+	id int
 	DB *sql.DB
 }
 
@@ -58,7 +57,7 @@ func GetMatch(db *sql.DB, id int) (*Match, error) {
 
 		if id == queriedid {
 			result := &Match{
-				ID: id,
+				id: id,
 				DB: db,
 			}
 
@@ -135,7 +134,7 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
 	now := time.Now()
 	nowMillis := now.UnixNano() / int64(time.Millisecond)
 
-	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.ID)
+	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
 	matches, err := m.DB.Query(sql)
 	if err != nil {
 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
@@ -161,12 +160,52 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
 func (m *Match) StartAutoTurnUpdate() {
 
 	go func() {
-		time.Sleep(time.Duration(m.GetRemainingMSecToTheTransitionOnTurn(1)) * time.Millisecond)
+		sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1)
+		if err != nil {
+			fmt.Println("error:%w", err)
+		}
+		time.Sleep(time.Duration(sum) * time.Millisecond)
 		// 時間を計算する関数を呼び出す
-		// endtime秒後にfield.ActAgents()をしたい
-		// field.ActAgents()
-		// 渡す中身は後で、、、
+		// endtime秒後に
 	}()
+}
+
+func (m *Match) UpdateTurn() error {
+	sql := fmt.Sprintf("SELECT update_actions FROM `match_teams` WHERE `match_id` = %d", m.id)
+	table, err := m.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("取得に失敗しました: %w", err)
+	}
+	// dbに存在を問い合わせる
+
+	// Team1UpdateActions
+	// Team2UpdateActions
+	fmt.Printf("ぷりん:%d", m.id)
+
+	i := 0
+	for table.Next() || i > 3 {
+		fmt.Printf("ぷりん")
+		var queriedUpdateActions []byte
+		if err := table.Scan(&queriedUpdateActions); err != nil {
+			return fmt.Errorf("情報の抽出に失敗しました: %w", err)
+		}
+
+		var updateactions []*apispec.UpdateAction
+		if err := json.Unmarshal(queriedUpdateActions, updateactions); err != nil {
+			return fmt.Errorf("Unmarshal 失敗しました: %w", err)
+		}
+		fmt.Printf("%+v", updateactions)
+
+		i++
+	}
+
+	if i != 2 {
+		return fmt.Errorf("match_idが2つではない okasii")
+	}
+
+	// field.ActAgents()
+	// 渡す中身は後で、、
+	return nil
 }
 
 // GetFieldByID は 指定された試合IDの保管しているFieldStatusを返します
@@ -184,25 +223,22 @@ func (m *Match) StartAutoTurnUpdate() {
 
 // PostAgentActions は 各チームのエージェントの行動情報を受け取ります
 func (g *GameMaster) PostAgentActions(localTeamID int, UpdateActions []*apispec.UpdateAction) error {
-	globalTeamID, exists := g.GlobalTeamIDsByLocalTeamID[localTeamID]
-	if !exists {
-		return errors.New(strings.Join([]string{"localTeamID: ", strconv.Itoa(localTeamID), "が存在しません"}, ""))
-	}
-	// 存在しないlocalTeamIDを渡されたらエラー、存在していたらlocalTeamID → globalTeamID
-
-	// g.Teams[globalTeamID].JoinedMatchesByLocalTeamID[localTeamID].UpdateActions = UpdateActions
-	// globalTeamID →　Team
-	// Team → localTeamID → joinedMatches
-	// joinedMatches.UpdateActions ←　代入！！
-
-	if ua, err := json.Marshal(UpdateActions); err != nil {
-		return fmt.Errorf("取得に失敗しました: %w", err)
-	}
-
-	sql := fmt.Sprintf("UPDATE `match_teams` SET `update_actions` = %s WHERE `match_teams`.`local_team_id` = %d", ua, localTeamID)
+	sql := fmt.Sprintf("SELECT local_team_id FROM `match_teams` WHERE `local_team_id` = %d", localTeamID)
 	_, err := g.DB.Query(sql)
 	if err != nil {
-		return fmt.Errorf("取得に失敗しました: %w", err)
+		return fmt.Errorf("localTeamIDが存在しません: %w", err)
+	}
+	// 存在しないlocalTeamIDを渡されたらエラー
+
+	ua, err := json.Marshal(UpdateActions)
+	if err != nil {
+		return fmt.Errorf("jsonの読み込みに失敗しました: %w", err)
+	}
+
+	sql = fmt.Sprintf("UPDATE `match_teams` SET `update_actions` = '%s' WHERE `match_teams`.`local_team_id` = %d", ua, localTeamID)
+	_, err = g.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("書き込みに失敗しました: %w", err)
 	}
 
 	return nil
