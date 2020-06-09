@@ -373,12 +373,75 @@ func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 	}
 }
 
+// IsOutsideField は与えられた座標がフィールドの外側にあるならtrueを返します
+func (f *Field) IsOutsideField(x int, y int) bool {
+	if x < 0 || x >= f.Width {
+		return true
+	}
+	if y < 0 || y >= f.Height {
+		return true
+	}
+	return false
+}
+
 // HogeHogeFunction はteamIDの城壁の内部にあるセルを記録します
 func (f *Field) HogeHogeFunction(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
-	// 途中ではみ出たらfalse, 全ての更新を無かったことにする。
-	return false
-	// 途中ではみ出ずに終了したら囲われているという事なので、trueを返し全ての更新を適用する。
+	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
+	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
+	seen := make([][]bool, f.Height)
+	for i := 0; i < f.Height; i ++ {
+		seen[i] = make([]bool, f.Width)
+		for j := 0; j < f.Width; j ++ {
+			seen[i][j] = false
+		}
+	}
+	outsideFlag := false
+
+	st := stack.New()
+	st.Push([]int{startX, startY})
+	FOR_LABEL:
+	for st.Len() != 0 {
+		xy := st.Pop().([]int)
+		x := xy[0]
+		y := xy[1]
+		for i := 0; i < 8; i ++ {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
+				outsideFlag = true
+				break FOR_LABEL
+			}
+			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" && f.Cells[y+dy[i]][x+dx[i]].TiledBy == teamID {
+				continue
+			}
+			if seen[y+dy[i]][x+dx[i]] == true {
+				continue
+			}
+			st.Push([]int{x+dx[i], y+dy[i]})
+			seen[y+dy[i]][x+dx[i]] = true
+		}
+	}
+
+	if outsideFlag == true {
+		return false
+	}
+	for y := 0; y < f.Height; y ++ {
+		for x := 0; x < f.Width; x ++ {
+			(*isAreaBy)[teamID][y][x] = seen[y][x]
+		}
+	}
 	return true
+}
+
+// FugaFugaFunction はkakowareCount[1]の中で、kakowareCount[0]で囲めるならtrueを返します
+func (f *Field) FugaFugaFunction(teamID int, startX int, startY int, isArea [][]bool) bool {
+	return true
+}
+
+// PiyoPiyoFunction は城壁を超えない範囲の連結成分をすべてteamIDの陣地にし、seenを更新します
+// teamID == -1 ならなにもしません
+func (f *Field) PiyoPiyoFunction(teamID int, startX int, startY int, seen *[][]bool) {
+	if teamID == -1 {
+		return
+	}
 }
 
 // CleanUpCellsFormerlyWall は以前は壁だった細胞を片付けます
@@ -403,22 +466,34 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			// 各チームの城壁で囲まれているかチェック
 			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
 			var isAreaBy map[int][][]bool
-			var kakowaretaka map[int]bool
+			kakowareCount := []int{}
 			for _, team := range f.Teams {
 				
-				kakowaretaka[team.ID] = f.HogeHogeFunction(team.ID, x, y, &isAreaBy)
+				if f.HogeHogeFunction(team.ID, x, y, &isAreaBy) == true {
+					kakowareCount = append(kakowareCount, team.ID)
+				}
 			}
 
-			// 1チームにしか囲われていないのなら
-			// そのチームの陣地である。
+			var aaaaa int
 
-			// 2チームともに囲まれているのなら
-			// 片方の領域内で囲めるかどうかで決める。
+			// どちらのチームにも囲まれていないのなら変更しない。
+			// 1チームにしか囲われていないのならそのチームの陣地である。
+			// 2チームともに囲まれているのなら片方の領域内で囲めるかどうかで決める。
 
-			// どちらのチームにも囲まれていないのなら
-			// 変更しない。
-
+			switch len(kakowareCount) {
+			case 0:
+				aaaaa = -1
+			case 1:
+				aaaaa = kakowareCount[0]
+			case 2:
+				if f.FugaFugaFunction(kakowareCount[0], x, y, isAreaBy[kakowareCount[1]]) == true {
+					aaaaa = kakowareCount[0]
+				} else {
+					aaaaa = kakowareCount[1]
+				}
+			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
+			f.PiyoPiyoFunction(aaaaa, x, y, &seen)
 		}
 	}
 }
