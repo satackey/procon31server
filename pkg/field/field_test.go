@@ -221,7 +221,6 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 
 	width := 12
 	height := 13
-	// todo: testcase作る
 
 	points := [][]int{
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -339,6 +338,32 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	updateActionIDs := []int{3, 4}
 
 	return f, isValid, updateActions, updateActionIDs
+}
+
+func TestCheckAreaByDFS(t *testing.T) {
+	f, isValid, updateActions, updateActionIDs := GetTestCase02()
+	updateAction2s := f.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			f.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	x, y := 7, 7
+	var result map[int][][]bool
+	if f.CheckAreaByDFS(3, x, y, &result) != true {
+		t.Fatal("error")
+	}
+	if f.CheckAreaByDFS(4, x, y, &result) != true {
+		t.Fatalf("error")
+	}
+
+	// todo: expectedを書くぞ～
+
 }
 
 func TestActAgents(t *testing.T) {
