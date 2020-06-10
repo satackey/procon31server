@@ -99,12 +99,11 @@ func TestTeamExistsNasi(t *testing.T) {
 }
 
 func TestCreareMatch(t *testing.T) {
-	gm := &GameMaster{}
-	err := gm.ConnectDB()
-	if err != nil {
-		t.Fatalf("connect 失敗: %s", err)
-		return
-	}
+	createMatch(t)
+}
+
+func createMatch(tb testing.TB) {
+	gm := createGameMasterInstanceConnectedDB(tb)
 
 	cell := apispec.Cell{
 		Status: "free",
@@ -121,11 +120,21 @@ func TestCreareMatch(t *testing.T) {
 		Actions:           []apispec.FieldStatusAction{},
 	}
 
-	_, err = gm.CreateMatch(&TestCase, 1599066568, 15000, 2000, 15, "7r64phsgztwm2n4wr27du7nmxnxgaemt3wnnzwxaxc53dw7yt3", "haae42hngzahwewty5azjnnpgaxbibnfyfugpbhd7hmrds2sy7")
+	_, err := gm.CreateMatch(&TestCase, 1599066568, 15000, 2000, 15, "7r64phsgztwm2n4wr27du7nmxnxgaemt3wnnzwxaxc53dw7yt3", "haae42hngzahwewty5azjnnpgaxbibnfyfugpbhd7hmrds2sy7")
 	if err != nil {
-		t.Fatalf("マッチ登録 失敗: %s", err)
+		tb.Fatalf("マッチ登録 失敗: %s", err)
 		return
 	}
+}
+
+func createGameMasterInstanceConnectedDB(tb testing.TB) *GameMaster {
+	gm := &GameMaster{}
+	err := gm.ConnectDB()
+	if err != nil {
+		tb.Fatalf("connect 失敗: %s", err)
+		return nil
+	}
+	return gm
 }
 
 func TestGetMatch(t *testing.T) {
@@ -253,6 +262,8 @@ func TestUpdateTurn(t *testing.T) {
 		t.Fatalf("connect 失敗: %s", err)
 		return
 	}
+
+	TestCreareMatch(t)
 
 	m, err := GetMatch(gm.DB, 6)
 	if err != nil {

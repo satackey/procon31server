@@ -98,24 +98,32 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 
 	fieldJson := "{}"
 
-	sql := fmt.Sprintf("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, '%d', '%d', '%d', '%d', '%s')", startsAt, turnMillis, intervalMillis, turns, fieldJson)
-	creatematch, err := g.DB.Query(sql)
+	sql := fmt.Sprintf("")
+
+	// creatematch, err := g.DB.QueryRow(sql)
+	stmt, err := g.DB.Prepare("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, ?, ?, ?, ?, ?)")
+	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fieldJson)
 	if err != nil {
-		return 0, fmt.Errorf("データベースに接続できませんでした: %w", err)
+		return 0, fmt.Errorf("データベースに接続できませんでした1: %w", err)
 	}
 
-	var matchID int
-	for creatematch.Next() {
-		if err := creatematch.Scan(&matchID); err != nil {
-			return 0, fmt.Errorf("情報の抽出に失敗しました: %w", err)
-		}
+	// var matchID int
+	matchID64, err := creatematch.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("情報の抽出に失敗しました: %w", err)
 	}
+	matchID := int(matchID64)
+	// for creatematch.Next() {
+	// 	if err := creatematch.Scan(&matchID); err != nil {
+	// 		return 0, fmt.Errorf("情報の抽出に失敗しました: %w", err)
+	// 	}
+	// }
 
-	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`) VALUES ('%d', NULL, '%s'), ('%d', NULL, '%s')", matchID, globalTeamID1, matchID, globalTeamID2)
+	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`, `update_actions`) VALUES ('%d', NULL, '%s', 'null'), ('%d', NULL, '%s', 'null')", matchID, globalTeamID1, matchID, globalTeamID2)
 	_, err = g.DB.Query(sql)
 	if err != nil {
 		// return 0, err // 取得に失敗
-		return 0, fmt.Errorf("データベースに接続できませんでした: %w", err)
+		return 0, fmt.Errorf("データベースに接続できませんでした2: %w", err)
 	}
 
 	field := &field.Field{}
