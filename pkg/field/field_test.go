@@ -23,11 +23,11 @@ func GetTestCase01() (*Field, []bool, []*apispec.UpdateAction, []int) {
 		{-4, 0, 2, 1, 2, 2},
 	}
 	cells := make([][]apispec.Cell, height)
-	for i, cellRow := range cells {
-		cells[i] = make([]apispec.Cell, width)
-		for j := range cellRow {
-			cells[i][j].Status = "free"
-			cells[i][j].TeamID = 0
+	for y := range cells {
+		cells[y] = make([]apispec.Cell, width)
+		for x := range cells[y] {
+			cells[y][x].Status = "free"
+			cells[y][x].TeamID = 0
 		}
 	}
 	teams := []apispec.Team{
@@ -95,6 +95,15 @@ func GetTestCase01() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	}
 
 	f.InitField(fieldStatus)
+
+	for y := range f.Cells {
+		for x := range f.Cells[y] {
+			f.Cells[y][x].x = x
+			f.Cells[y][x].y = y
+			f.Cells[y][x].field = f
+			f.Cells[y][x].Point = points[y][x]
+		}
+	}
 
 	updateActions := []*apispec.UpdateAction{
 		{
@@ -214,25 +223,48 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	height := 13
 	// todo: testcase作る
 
-
-	
 	points := [][]int{
-		{4, -5, 0, 0, -1, 4},
-		{-4, -1, 0, -4, -3, -2},
-		{-1, 3, -2, 4, -1, 3},
-		{4, 0, 0, 1, 1, 1},
-		{-2, 3, 2, 5, -2, 0},
-		{-1, 1, 4, 2, -3, 1},
-		{-1, 3, 5, 3, -4, 0},
-		{-4, 0, 2, 1, 2, 2},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
-	cells := make([][]apispec.Cell, height)
-	for i, cellRow := range cells {
-		cells[i] = make([]apispec.Cell, width)
-		for j := range cellRow {
-			cells[i][j].Status = "free"
-			cells[i][j].TeamID = 0
-		}
+
+	w := apispec.Cell{
+		Status: "wall",
+		TeamID: 3,
+	}
+	e := apispec.Cell{
+		Status: "free",
+		TeamID: 0,
+	}
+	r := apispec.Cell{
+		Status: "wall",
+		TeamID: 4,
+	}
+	cells := [][]apispec.Cell{
+		{w,w,w,w,w,e,e,e,r,r,r,r,},
+		{w,e,e,e,w,w,e,r,r,e,e,r,},
+		{w,w,w,w,w,w,w,w,w,r,r,r,},
+		{w,r,r,r,r,e,e,e,w,w,w,w,},
+		{w,e,e,e,r,r,r,r,r,r,r,w,},
+		{w,r,r,r,r,e,e,w,e,e,r,w,},
+		{w,r,e,e,r,e,w,w,w,e,r,w,},
+		{w,r,r,r,r,r,w,e,w,w,r,w,},
+		{w,w,e,w,r,e,w,w,w,e,r,w,},
+		{w,r,r,r,r,e,e,r,e,e,r,w,},
+		{w,r,e,e,r,r,r,r,r,r,r,w,},
+		{w,r,r,r,e,e,e,e,e,e,e,w,},
+		{w,w,w,w,w,w,w,w,w,w,w,w,},
 	}
 	teams := []apispec.Team{
 		{
@@ -240,18 +272,8 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 			Agents: []apispec.Agent{
 				{
 					AgentID: 303,
-					X:       0,
-					Y:       0,
-				},
-				{
-					AgentID: 307,
-					X:       1,
-					Y:       6,
-				},
-				{
-					AgentID: 308,
-					X:       1,
-					Y:       3,
+					X: 7,
+					Y: 0,
 				},
 			},
 			WallPoint: 0,
@@ -262,23 +284,8 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 			Agents: []apispec.Agent{
 				{
 					AgentID: 403,
-					X:       2,
-					Y:       1,
-				},
-				{
-					AgentID: 405,
-					X:       0,
-					Y:       7,
-				},
-				{
-					AgentID: 406,
-					X:       1,
-					Y:       7,
-				},
-				{
-					AgentID: 407,
-					X:       5,
-					Y:       7,
+					X: 2,
+					Y: 8,
 				},
 			},
 			WallPoint: 0,
@@ -299,114 +306,37 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	}
 
 	f.InitField(fieldStatus)
+	for y := range f.Cells {
+		for x := range f.Cells[y] {
+			f.Cells[y][x].x = x
+			f.Cells[y][x].y = y
+			f.Cells[y][x].field = f
+			f.Cells[y][x].Point = points[y][x]
+		}
+	}
 
 	updateActions := []*apispec.UpdateAction{
 		{
 			AgentID: 303,
-			DX:      1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		{
-			AgentID: 0,
-			DX:      0,
-			DY:      0,
-			Type:    "put",
-			X:       2,
-			Y:       1,
-		},
-		{
-			AgentID: 0,
-			DX:      0,
-			DY:      0,
-			Type:    "put",
-			X:       4,
-			Y:       2,
-		},
-		{
-			AgentID: 308,
-			DX:      -1,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		{
-			AgentID: 0,
-			DX:      0,
-			DY:      0,
-			Type:    "put",
-			X:       1,
-			Y:       3,
-		},
-		{
-			AgentID: 307,
-			DX:      0,
-			DY:      1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
+			DX: 0,
+			DY: 1,
+			Type: "remove",
+			X: 0,
+			Y: 0,
 		},
 		{
 			AgentID: 403,
-			DX:      -1,
-			DY:      0,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		{
-			AgentID: 0,
-			DX:      0,
-			DY:      0,
-			Type:    "put",
-			X:       4,
-			Y:       2,
-		},
-		{
-			AgentID: 0,
-			DX:      0,
-			DY:      0,
-			Type:    "put",
-			X:       3,
-			Y:       7,
-		},
-		{
-			AgentID: 405,
-			DX:      1,
-			DY:      -1,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		{
-			AgentID: 406,
-			DX:      -1,
-			DY:      0,
-			Type:    "move",
-			X:       0,
-			Y:       0,
-		},
-		{
-			AgentID: 407,
-			DX:      1,
-			DY:      0,
-			Type:    "move",
-			X:       0,
-			Y:       0,
+			DX: 1,
+			DY: 0,
+			Type: "remove",
+			X: 0,
+			Y: 0,
 		},
 	}
 
-	agentCount := len(updateActions)
-	isValid := make([]bool, agentCount)
-	for i := range isValid {
-		isValid[i] = true
-	}
-	isValid[11] = false
+	isValid := []bool{true, true}
 
-	updateActionIDs := []int{3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4}
+	updateActionIDs := []int{3, 4}
 
 	return f, isValid, updateActions, updateActionIDs
 }
