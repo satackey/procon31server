@@ -399,6 +399,7 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 
 	st := stack.New()
 	st.Push([]int{startX, startY})
+	seen[startY][startX] = true
 	FOR_LABEL:
 	for st.Len() != 0 {
 		xy := st.Pop().([]int)
@@ -425,8 +426,6 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 	}
 	for y := 0; y < f.Height; y ++ {
 		for x := 0; x < f.Width; x ++ {
-			fmt.Printf("%d,%d,%d\n", teamID, y, x)
-			fmt.Printf("%v\n", seen[y][x])
 			(*isAreaBy)[teamID][y][x] = seen[y][x]
 		}
 	}
