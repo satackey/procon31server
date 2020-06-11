@@ -9,34 +9,18 @@ import (
 
 	"github.com/ant0ine/go-json-rest/rest"
 
-	// "time"
 	// "../apisec/apisec.go"
-	"strconv"
+
 	"sync"
-	"unsafe"
 )
 
 func main() {
 
-	// users := Users{
-	// 	Store: map[string]*User{},
-	// }
-
 	log.Println("localhost:3000 でサーバを起動しました")
 	api := rest.NewApi()
 
-	// https://github.com/ant0ine/go-json-rest#streamingに使われていたapi
-	// api.Use(&rest.AccessLogApacheMiddleware{})
-	// api.Use(rest.DefaultCommonStack...)
-
-	// 基本的なやつ?
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
-		rest.Get("/stream", StreamThings),
-		// rest.Get("/matches", MatchesThings),
-		// rest.Get("/matches/:id", FieldStatus),
-		// rest.Get("/matches/:id", users.FieldStatus),
-		// rest.Post("/matches/:id/action", Action),s
 		rest.Get("/ping", PingsThings),
 
 		rest.Get("/matches", GetAllMatch),
@@ -48,44 +32,18 @@ func main() {
 
 		// CRUDのC Post or Put
 		rest.Get("/matches/:id", GetUpdateAction),
-		// 必要かまだわからない
-		rest.Delete("/matches/:id", DeleteMatch),
-
+		// rest.Delete("/matches/:id", DeleteMatch),
 		rest.Post("/matches/:id/advanceaction", PostAction),
 		// rest.Get("/matches/:id/action"),
-
 		rest.Post("/matches/:id/action", PostUpdate),
+		// // rest.Post("/matches/:id/action", NewPostUpdate),
+		// rest.Post("/matchesnew/:id", GetFieldStatus),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 	api.SetApp(router)
 	log.Fatal(http.ListenAndServe(":3000", api.MakeHandler()))
-}
-
-// Thing は
-type Thing struct {
-	Name string
-}
-
-// StreamThings は
-func StreamThings(w rest.ResponseWriter, r *rest.Request) {
-	// cpt := 0
-	// for {
-	// 	cpt++
-
-	// w.WriteJson(
-	// 	&Thing{
-	// 		Name: fmt.Sprintf("thing #%d", cpt),
-	// 	},
-	// )
-	w.(http.ResponseWriter).Write([]byte("\n"))
-	// Flush the buffer to client
-	w.(http.Flusher).Flush()
-	// wait 3 seconds
-
-	// time.Sleep(time.Duration(3) * time.Second)
-	// }
 }
 
 // Ping は
@@ -96,123 +54,14 @@ type Ping struct {
 // PingsThings は
 func PingsThings(w rest.ResponseWriter, r *rest.Request) {
 
-	// ping := Ping{"OK"}
-	// err := r.DecodeJsonPayload(&ping)
-	// if err != nil {
-	// 	rest.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// w.(http.ResponseWriter).Write([]byte("\n"))
-	// 	// Flush the buffer to client
-	// w.(http.Flusher).Flush()
-	// // w.WriteHeader(http.StatusOK)
-
-	// w.WriteJson(&ping)
-
-	// ping := Ping{"OK"}
-
-	// // res, err := json.Marshal(ping)
-
-	// // res, err := EncodeJson(ping)
-	// // res, err := rest.EncodeJson(ping)
-	// // res, err := r.EncodeJson(ping)
-
-	// if {
-	// 	rest.Error(w, "")
-	// }
-
-	// res, err := w.EncodeJson(ping)
-
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Header().Set("Content-Type", "application/json")
-
-	// x := r.PathParam()
-	// if x == "ping" {
-	// 	w.WriteJson(http.StatusOK)
-	// }
-
-	// if x != "ping" {
-	// 	w.WriteJson(http.StatusUnauthorized)
-	// }
-
-	// w.Write(res)
-
 	MyResponse(w, "OK", 202)
 	return
 
 }
 
-// Match は
-// type Match struct {
-// 	 string
-// }
-
-// type User struct {
-// 	Id string
-// 	Name string
-// }
-
-// type Users struct {
-// 	sync.RWMutex
-// 	Store map[string]*User
-// }
-
-// MatchesThings は
-func MatchesThings(w rest.ResponseWriter, r *rest.Request) {
-
-	w.(http.ResponseWriter).Write([]byte("\n"))
-	// Flush the buffer to client
-	w.(http.Flusher).Flush()
-	// wait 3 seconds
-	// time.Sleep(time.Duration(3) * time.Second)
-}
-
 // こういう構造体をapisec.goから引っ張ってきたい
 // type Status struct {
 //     Id int `json:id`
-// }
-
-// FieldStatus は
-// func (u *Users) FieldStatus(w rest.ResponseWriter, r *rest.Request) {
-func FieldStatus(w rest.ResponseWriter, r *rest.Request) {
-
-	// id := r.PathParam("id")
-	// fmt.Print(id)
-	// u.RLock()  // グローバル変数にアクセスするのに必要?
-	// var user *User
-	// if u.Store[id] != nil {
-	// 	user = &User{}
-	// 	*user = *u.Store[id]
-	// }
-	// u.RUnlock()
-	// if user == nil {
-	// 	rest.NotFound(w, r)
-	// 	return
-	// }
-	// w.WriteJson(user)
-
-	w.(http.ResponseWriter).Write([]byte("\n"))
-	// Flush the buffer to client
-	w.(http.Flusher).Flush()
-	// wait 3 seconds
-	// time.Sleep(time.Duration(3) * time.Second)
-}
-
-// Action は 行動情報を更新してpostします
-// func Action(w rest.ResponseWriter, r *rest.Request) {
-
-// 	w.(http.ResponseWriter).Write([]byte("\n"))
-// 		// Flush the buffer to client
-// 	w.(http.Flusher).Flush()
-// }
-
-// type Country struct {
-// 	Code string
-// 	Name string
 // }
 
 type Match struct {
@@ -224,19 +73,7 @@ type Match struct {
 	Turns          int    `json:"turns"`          // 試合のターン数
 }
 
-// type Match struct {
-// 	ID             int    `json:"id"`
-// 	IntervalMillis int    `json:"intervalMillis"`
-// 	// MatchTo        string `json:"matchTo"`
-// 	// TeamID         int    `json:"teamID"`
-// 	// TurnMillis     int    `json:"turnMillis"`
-// 	// Turns          int    `json:"turns"`
-// }
-
-// var store = map[string]*Country{}
-var store = map[int]*Match{}
-
-// var store = []*Country{}
+// var store = map[int]*Match{}
 
 var lock = sync.RWMutex{}
 
@@ -276,20 +113,13 @@ func PostMatch(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "turns required", 400)
 		return
 	}
-	lock.Lock()
-	store[matchstruct.Id] = &matchstruct
-	lock.Unlock()
-	w.WriteJson(&matchstruct)
+	// lock.Lock()
+	// store[matchstruct.Id] = &matchstruct
+	// lock.Unlock()
+	// w.WriteJson(&matchstruct)
+	MyResponse(w, "OK", 202)
+	return
 }
-
-// type ZERO struct {
-// 	Id int `json:"id"`
-// 	IntervalMillis string `json:"intervalMillis"`
-// 	MatchTo string `json:"matchTo"`
-// 	TeamID         int    `json:"teamID"`
-// 	TurnMillis     int    `json:"turnMillis"`
-// 	Turns          int    `json:"turns"`
-// }
 
 // https://github.com/ant0ine/go-json-rest/blob/ebb33769ae013bd5f518a8bac348c310dea768b8/rest/response.go
 
@@ -297,18 +127,10 @@ type ResponseWriter interface {
 
 	// Identical to the http.ResponseWriter interface
 	Header() http.Header
-
-	// Use EncodeJson to generate the payload, write the headers with http.StatusOK if
-	// they are not already written, then write the payload.
-	// The Content-Type header is set to "application/json", unless already specified.
 	WriteJson(v interface{}) error
 
-	// Encode the data structure to JSON, mainly used to wrap ResponseWriter in
-	// middlewares.
 	EncodeJson(v interface{}) ([]byte, error)
 
-	// Similar to the http.ResponseWriter interface, with additional JSON related
-	// headers set.
 	WriteHeader(int)
 }
 
@@ -324,83 +146,33 @@ func MyResponse(w ResponseWriter, error string, code int) {
 
 func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
 	lock.RLock()
-	manymatches := make([]Match, len(store)) // mapを初期化してる storeの数だけ場所を確保している
-	i := 0
-	for _, matchstruct := range store {
-		manymatches[i] = *matchstruct
-		i++
-	}
-	x := unsafe.Sizeof(manymatches)
-	fmt.Println(x)
+	// manymatches := make([]Match, len(store)) // mapを初期化してる storeの数だけ場所を確保している
+	// i := 0
+	// for _, matchstruct := range store {
+	// 	manymatches[i] = *matchstruct
+	// 	i++
+	// }
+	// x := unsafe.Sizeof(manymatches)
+	// fmt.Println(x)
 
-	// y := Match{}
-	// if unsafe.Sizeof(manymatches) == 24 {
-	// 	rest.Error(w, "値一個もないぞ", 401)
+	// lock.RUnlock() // ここに書かないとpostができない
+	// // X := make([]int, 5, 5)
+	// // 全部24じゃん
+	// // fmt.Println(unsafe.Sizeof(X))
+	// // fmt.Println(unsafe.Sizeof(manymatches))
+	// fmt.Println(len(store)) // 0??????
+	// fmt.Println("len:", len(manymatches))
+	// // zero := len(manymatches)
+	// if len(manymatches) == 0 {
+	// 	MyResponse(w, "値一個もないぞ〜〜〜", 401)
 	// 	return
 	// }
 
-	lock.RUnlock() // ここに書かないとpostができない
-	// X := make([]int, 5, 5)
-	// 全部24じゃん
-	// fmt.Println(unsafe.Sizeof(X))
-	// fmt.Println(unsafe.Sizeof(manymatches))
-	fmt.Println(len(store)) // 0??????
-	fmt.Println("len:", len(manymatches))
-	// zero := len(manymatches)
-	if len(manymatches) == 0 {
-		MyResponse(w, "値一個もないぞ〜〜〜", 401)
-		return
-	}
+	// fmt.Printf("%T %T", manymatches, &manymatches)
 
-	fmt.Printf("%T %T", manymatches, &manymatches)
-
-	w.WriteJson(&manymatches)
-}
-
-// func GetMatch(w rest.ResponseWriter, r *rest.Request) {
-// 	id_val := r.PathParam("id")
-// 	// fmt.Println("aaaa")
-// 	// code はstr型
-// 	var id int
-// 	id, _ = strconv.Atoi(id_val)
-// 	// fmt.Println(id) // urlのパラメータ
-// 	lock.RLock()
-// 	var matchstruct *Match
-// 	// fmt.Printf("%T\n", country) // nil
-// 	// fmt.Println("%T", store) //map
-
-// 	// fmt.Printf("%T %T\n", store, code) // map[int]*main.Countryと string
-// 	// if store[code] == nil {
-// 	// 	fmt.Printf("nil")
-// 	// }
-// 	if store[id] != nil {
-// 		matchstruct = &Match{}
-// 		*matchstruct = *store[id]
-// 		// fmt.Println(*country)
-// 		// fmt.Println("x")
-// 	}
-// 	lock.RUnlock()
-
-// 	// if country == nil { // ここの左辺がなぜstore[code]じゃだめかわからない 動いたからヨシはだめなので後で考える
-// 	if store[id] == nil {
-// 		rest.NotFound(w, r)
-// 		// fmt.Println("a")
-// 		return
-// 	}
-// 	w.WriteJson(matchstruct)
-// }
-
-// Routes sharing a common placeholder MUST name it consistently: id != code
-// /matches/:[] ここがかぶるとだめ
-
-func DeleteMatch(w rest.ResponseWriter, r *rest.Request) {
-	id_val := r.PathParam("id")
-	var id int
-	id, _ = strconv.Atoi(id_val)
-	lock.Lock()
-	delete(store, id)
-	lock.Unlock()
-	w.WriteHeader(http.StatusOK)
+	// w.WriteJson(&manymatches)
+	MyResponse(w, "OK", 202)
+	return
 }
 
 // このpostをmatches:id に反映させる? させた(/actionの使い方があっているか確認) 違う
@@ -443,10 +215,12 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "turns required", 400)
 		return
 	}
-	lock.Lock()
-	store[matchstruct.Id] = &matchstruct
-	lock.Unlock()
-	w.WriteJson(&matchstruct)
+	// lock.Lock()
+	// store[matchstruct.Id] = &matchstruct
+	// lock.Unlock()
+	// w.WriteJson(&matchstruct)
+	MyResponse(w, "OK", 202)
+	return
 }
 
 type UpdateAction struct {
@@ -458,21 +232,15 @@ type UpdateAction struct {
 	// Array   []Agent `json:"agents"`
 }
 
-// type Agent struct {
-// 	AgentID int `json:"agentID"`
-// 	X       int `json:"x"`
-// 	Y       int `json:"y"`
-// }
-
 // TODO:変数名をちゃんと考える
-var store_2 = map[int]*UpdateAction{}
+// var store_2 = map[int]*UpdateAction{}
 
 func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 
-	id_val := r.PathParam("id")
-	// code はstr型
-	var id int
-	id, _ = strconv.Atoi(id_val)
+	// id_val := r.PathParam("id")
+	// // code はstr型
+	// var id int
+	// id, _ = strconv.Atoi(id_val)
 
 	NewActionStruct := UpdateAction{}
 
@@ -512,40 +280,63 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 		NewActionStruct.Turn = CheckTurnVal
 	}
 
-	lock.Lock()
-
+	// lock.Lock()
+	// FieldStatusActionStruct := FieldStatusAction{}
+	// デコードした値を別の構造体型mapに代入しなきゃいけない
+	// 別の型に代入する方法(ActionStoreにNewActionStructのアドレスを代入)を調べるか左辺を細かく指定する(値を一個ずつ ActionStoreのn番目のidというkeyに NewActionStruct.Idを代入みたいな)方法を調べる
 	// matchstruct := Match{}
 
-	store_2[id] = &NewActionStruct
-	lock.Unlock()
-	w.WriteJson(&NewActionStruct)
+	// store_2[id] = &NewActionStruct
+	// lock.Unlock()
+	// w.WriteJson(&NewActionStruct)
+	MyResponse(w, "OK", 202)
+	return
 }
+
+type FieldStatusAction struct {
+	AgentID int    `json:"agentID"`
+	DX      int    `json:"dx"`
+	DY      int    `json:"dy"`
+	Type    string `json:"type"`
+	Apply   int    `json:"apply"`
+	Turn    int    `json:"turn"`
+}
+
+var ActionStore = map[int]*FieldStatusAction{}
 
 // Matchのidを判別しつつUpdateActionをGetする
 func GetUpdateAction(w rest.ResponseWriter, r *rest.Request) {
-	id_val := r.PathParam("id")
-	// code はstr型
-	var id int
-	id, _ = strconv.Atoi(id_val)
+	// id_val := r.PathParam("id")
+	// // code はstr型
+	// var id int
+	// id, _ = strconv.Atoi(id_val)
 	// fmt.Println(id) // urlのパラメータ
 
-	lock.RLock()
+	// lock.RLock()
 
-	// var matchstruct *Match
-	var updateactionstruct *UpdateAction
+	// var updateactionstruct *UpdateAction
+	// var otherstruct *Y
+	// newaction := UpdateAction{}
+	// agentid := store_2.agentID
 
-	if store_2[id] != nil {
-		// 右辺でアドレスを指定することで型を流し込んでいる
-		// matchstruct = &Match{}
-		updateactionstruct = &UpdateAction{}
-		// store[id]に格納されている値をpointerで呼び出して代入
-		// *matchstruct = *store[id]
-		*updateactionstruct = *store_2[id]
+	// if store_2[id] != nil {
+	// 	// 右辺でアドレスを指定することで型を流し込んでいる
+	// 	// matchstruct = &Match{}
+	// 	updateactionstruct = &UpdateAction{}
 
-		// fmt.Println(*country)
-		// fmt.Println("x")
-	}
-	lock.RUnlock()
+	// 	// otherstruct = &Y{}
+	// 	// store[id]に格納されている値をpointerで呼び出して代入
+	// 	// *matchstruct = *store[id]
+	// 	*updateactionstruct = *store_2[id]
+	// 	// *otherstruct = *store_2[id]
+
+	// 	// fmt.Println(*country)
+	// 	// fmt.Println("x")
+	// }
+
+	// updateactionstruct
+
+	// lock.RUnlock()
 	// if country == nil { // ここの左辺がなぜstore[code]じゃだめかわからない 動いたからヨシはだめなので後で考える
 
 	// if store[id] == nil {
@@ -553,10 +344,9 @@ func GetUpdateAction(w rest.ResponseWriter, r *rest.Request) {
 	// 	rest.NotFound(w, r)
 	// 	return
 	// }
-	w.WriteJson(updateactionstruct)
-	// w.WriteJson(matchstruct)
+	// w.WriteJson(updateactionstruct)
+	MyResponse(w, "OK", 202)
+	return
 }
 
-// type Turn struct {
-// 	[]
 // }
