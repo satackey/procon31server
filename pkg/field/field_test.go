@@ -356,13 +356,66 @@ func TestCheckAreaByDFS(t *testing.T) {
 	x, y := 7, 7
 	var result map[int][][]bool
 	if f.CheckAreaByDFS(3, x, y, &result) != true {
-		t.Fatal("error")
+		t.Fatalf("error")
 	}
 	if f.CheckAreaByDFS(4, x, y, &result) != true {
 		t.Fatalf("error")
 	}
 
 	// todo: expectedを書くぞ～
+	var expected map[int][][]bool
+	expected[3] = [][]bool{
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false, true,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+	}
+	expected[4] = [][]bool{
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false, true, true, true, true, true,false,false,},
+		{false,false,false,false,false, true, true, true, true, true,false,false,},
+		{false,false,false,false,false,false, true, true, true, true,false,false,},
+		{false,false,false,false,false, true, true, true, true, true,false,false,},
+		{false,false,false,false,false, true, true,false, true, true,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("\nlen(result): %d\nlen(expected): %d\n", len(result), len(expected))
+	}
+	for i := range result {
+		_, ok := expected[i]
+		if ok == false {
+			t.Fatalf("\n%d does not exist\n", i)
+		}
+		if len(result[i]) != len(expected[i]) {
+			t.Fatalf("")
+		}
+		for y := range expected[i] {
+			if len(result[i][y]) != len(result[i][y]) {
+				t.Fatalf("")
+			}
+			for x := range result[i][y] {
+				if result[i][y][x] != expected[i][y][x] {
+					t.Fatalf("")
+				}
+			}
+		}
+	}
 
 }
 
