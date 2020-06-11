@@ -425,6 +425,8 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 	}
 	for y := 0; y < f.Height; y ++ {
 		for x := 0; x < f.Width; x ++ {
+			fmt.Printf("%d,%d,%d\n", teamID, y, x)
+			fmt.Printf("%v\n", seen[y][x])
 			(*isAreaBy)[teamID][y][x] = seen[y][x]
 		}
 	}
@@ -525,6 +527,15 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			var isAreaBy map[int][][]bool
 			SurroundedBy := []int{}
 			for _, team := range f.Teams {
+				isAreaBy[team.ID] = make([][]bool, f.Height)
+				for yy := 0; yy < f.Height; yy ++ {
+					isAreaBy[team.ID][yy] = make([]bool, f.Width)
+					for xx := 0; xx < f.Width; xx ++ {
+						isAreaBy[team.ID][yy][xx] = false
+					}
+				}
+
+				fmt.Printf("\n%d\n", len(isAreaBy))
 				
 				if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
 					SurroundedBy = append(SurroundedBy, team.ID)

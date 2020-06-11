@@ -354,7 +354,15 @@ func TestCheckAreaByDFS(t *testing.T) {
 	}
 
 	x, y := 7, 7
-	var result map[int][][]bool
+	allFalseSlice := make([][]bool, f.Height)
+	for y := 0; y < f.Height; y ++ {
+		allFalseSlice[y] = make([]bool, f.Width)
+	}
+	result := map[int][][]bool{
+		3: allFalseSlice,
+		4: allFalseSlice,
+	}
+
 	if f.CheckAreaByDFS(3, x, y, &result) != true {
 		t.Fatalf("error")
 	}
@@ -363,7 +371,7 @@ func TestCheckAreaByDFS(t *testing.T) {
 	}
 
 	// todo: expectedを書くぞ～
-	var expected map[int][][]bool
+	expected := map[int][][]bool{}
 	expected[3] = [][]bool{
 		{false,false,false,false,false,false,false,false,false,false,false,false,},
 		{false,false,false,false,false,false,false,false,false,false,false,false,},
