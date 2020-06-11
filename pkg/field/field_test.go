@@ -411,15 +411,15 @@ func TestCheckAreaByDFS(t *testing.T) {
 			t.Fatalf("\n%d does not exist\n", i)
 		}
 		if len(result[i]) != len(expected[i]) {
-			t.Fatalf("")
+			t.Fatalf("\ni: %d\nlen(result[i]): %d\nlen(expected[i]): %d\n", i, len(result[i]), len(expected[i]))
 		}
 		for y := range expected[i] {
-			if len(result[i][y]) != len(result[i][y]) {
-				t.Fatalf("")
+			if len(result[i][y]) != len(expected[i][y]) {
+				t.Fatalf("\ni: %d, y: %d\nlen(result[i][y]): %d\nlen(expected[i][y]): %d\n", i, y, len(result[i][y]), len(expected[i][y]))
 			}
 			for x := range result[i][y] {
 				if result[i][y][x] != expected[i][y][x] {
-					t.Fatalf("")
+					t.Fatalf("\ni: %d, y: %d, x: %d\nresult[i][y][x]: %v\nexpected[i][y][x]: %v\n", i, y, x, result[i][y][x], expected[i][y][x])
 				}
 			}
 		}
