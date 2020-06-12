@@ -12,6 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/satackey/procon31server/pkg/apispec"
+	"github.com/satackey/procon31server/pkg/db"
 	"github.com/satackey/procon31server/pkg/field"
 )
 
@@ -24,6 +25,8 @@ type Match struct {
 // Team は
 type Team struct {
 	JoinedMatchesByLocalTeamID map[int]*joinedMatch // Key: LocalTeamID と Value: MatchID の紐付けをする
+	id                         int
+	DB                         *sql.DB
 }
 
 type joinedMatch struct {
@@ -41,8 +44,13 @@ type GameMaster struct {
 	DB                         *sql.DB
 }
 
-func GetMatch(db *sql.DB, id int) (*Match, error) {
+func GetMatch(id int) (*Match, error) {
 	// matchが存在するか調べる
+	db, err := db.GetDBConnection()
+	if err != nil {
+		return nil, fmt.Errorf("GetDBConnection 失敗: %w", err)
+	}
+
 	sql := fmt.Sprintf("SELECT id FROM `matches` WHERE `id` = '%d'", id)
 	match, err := db.Query(sql)
 	if err != nil {
@@ -67,8 +75,41 @@ func GetMatch(db *sql.DB, id int) (*Match, error) {
 
 	message := fmt.Sprintf("id: %dが存在しません", id)
 	return &Match{}, errors.New(message)
-
 }
+
+// func GetTeam(id int) (*Team, error) {
+// 	// matchが存在するか調べる
+// 	db, err := db.GetDBConnection()
+// 	if err != nil {
+// 		return nil, fmt.Errorf("GetDBConnection 失敗: %w", err)
+// 	}
+
+// 	sql := fmt.Sprintf("SELECT id FROM `teams` WHERE `id` = '%d'", id)
+// 	match, err := db.Query(sql)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("データベースに接続できませんでした: %w", err)
+// 	}
+
+// 	for match.Next() {
+// 		var queriedid int
+// 		if err := match.Scan(&queriedid); err != nil {
+// 			return nil, fmt.Errorf("情報の抽出に失敗しました: %w", err)
+// 		}
+
+// 		if id == queriedid {
+// 			result := &Match{
+// 				id: id,
+// 				DB: db,
+// 			}
+
+// 			return result, nil
+// 		}
+// 	}
+
+// 	message := fmt.Sprintf("id: %dが存在しません", id)
+// 	return &Match{}, errors.New(message)
+// }
+// Todo ここからやる
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
 func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
@@ -318,15 +359,36 @@ func (g *GameMaster) TeamExists(globalTeamID string) (bool, error) {
 // 	return &result, nil
 // }
 
-// ConnectDB はデータベースに接続します
 func (g *GameMaster) ConnectDB() error {
-	db, err := sql.Open("mysql", "procon31server:password@tcp(mysql:3306)/procon31")
+	db, err := db.GetDBConnection()
 	if err != nil {
-		return fmt.Errorf("データベースに接続できませんでした: %w", err)
+		return fmt.Errorf("GetDBConnection 失敗: %w", err)
 	}
-	// defer db.Close()
 	g.DB = db
+	return nil
+}
 
+func (m *Match) Delete() error {
+	sql := fmt.Sprintf("DELETE FROM `matches` WHERE `id` = '%d'", m.id)
+	_, err := m.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("Delete 失敗: %w", err)
+	}
+
+	sql = fmt.Sprintf("DELETE FROM `match_teams` WHERE `match_id` = '%d'", m.id)
+	_, err = m.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("Delete 失敗: %w", err)
+	}
+	return nil
+}
+
+func (t *Team) Delete() error {
+	sql := fmt.Sprintf("DELETE FROM `match_teams` WHERE `match_id` = '%d'", t.id)
+	_, err := t.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("Delete 失敗: %w", err)
+	}
 	return nil
 }
 

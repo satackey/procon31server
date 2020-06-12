@@ -1,12 +1,30 @@
 package gamemaster
 
 import (
+	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/satackey/procon31server/pkg/apispec"
 )
+
+func TestMain(m *testing.M) {
+	println("before all...")
+
+	code := m.Run()
+
+	println("after all...")
+	err := deleteAllCreatedMatch()
+	if err != nil {
+		fmt.Println("%w", err)
+		os.Exit(1)
+		return
+	}
+
+	os.Exit(code)
+}
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -100,6 +118,8 @@ func TestCreareMatch(t *testing.T) {
 	createMatch(t)
 }
 
+var createdMatchIDs []int = []int{}
+
 func createMatch(tb testing.TB) int {
 	gm := createGameMasterInstanceConnectedDB(tb)
 
@@ -123,13 +143,30 @@ func createMatch(tb testing.TB) int {
 		tb.Fatalf("マッチ登録 失敗: %s", err)
 		return 0
 	}
+
+	createdMatchIDs = append(createdMatchIDs, matchID)
+
 	return matchID
 }
 
-func TestGetMatch(t *testing.T) {
-	gm := createGameMasterInstanceConnectedDB(t)
+func deleteAllCreatedMatch() error {
+	for _, id := range createdMatchIDs {
+		match, err := GetMatch(id)
+		if err != nil {
+			return err
+		}
+		err = match.Delete()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	_, err := GetMatch(gm.DB, 6)
+func TestGetMatch(t *testing.T) {
+	matchID := createMatch(t)
+
+	_, err := GetMatch(matchID)
 	if err != nil {
 		t.Fatalf("失敗: %s", err)
 		return
@@ -138,9 +175,9 @@ func TestGetMatch(t *testing.T) {
 }
 
 func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
-	gm := createGameMasterInstanceConnectedDB(t)
+	matchID := createMatch(t)
 
-	m, err := GetMatch(gm.DB, 6)
+	m, err := GetMatch(matchID)
 	if err != nil {
 		t.Fatalf("失敗: %s", err)
 		return
@@ -212,11 +249,9 @@ func TestPostAgentActions(t *testing.T) {
 }
 
 func TestUpdateTurn(t *testing.T) {
-	gm := createGameMasterInstanceConnectedDB(t)
-
 	matchID := createMatch(t)
 
-	m, err := GetMatch(gm.DB, matchID)
+	m, err := GetMatch(matchID)
 	if err != nil {
 		t.Fatalf("失敗: %s", err)
 		return
