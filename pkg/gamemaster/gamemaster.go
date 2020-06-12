@@ -199,7 +199,7 @@ func (m *Match) UpdateTurn() error {
 		}
 
 		var updateactions []*apispec.UpdateAction
-		if err := json.Unmarshal(queriedUpdateActions, updateactions); err != nil {
+		if err := json.Unmarshal(queriedUpdateActions, &updateactions); err != nil {
 			return fmt.Errorf("Unmarshal 失敗しました: %w", err)
 		}
 		fmt.Printf("%+v", updateactions)
