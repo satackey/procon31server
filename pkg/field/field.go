@@ -2,7 +2,6 @@ package field
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -534,7 +533,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			}
 			// 各チームの城壁で囲まれているかチェック
 			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
-			var isAreaBy map[int][][]bool
+			isAreaBy := map[int][][]bool{}
 			// (x, y) を囲んでいる城壁のteamIDのスライス
 			SurroundedBy := []int{}
 			for _, team := range f.Teams {
@@ -573,23 +572,6 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			f.ChangeCellToPositionByDFS(teamID, x, y, &seen)
 		}
 	}
-
-
-	for y := range f.Cells {
-		for x := range f.Cells[y] {
-			st := "+"
-			if f.Cells[y][x].Status == "position" {
-				st = strconv.Itoa(f.Cells[x][y].TiledBy)
-			} else if f.Cells[y][x].Status == "free" {
-				st = "."
-			}
-			fmt.Printf("%s", st)
-		}
-		fmt.Printf("\n")
-	}
-	fmt.Printf("\n")
-
-
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。

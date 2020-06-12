@@ -1,8 +1,6 @@
 package field
 
 import (
-	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -382,20 +380,6 @@ func TestCleanUpCellsFormerlyWall(t *testing.T) {
 		fExpected.Cells[y4[i]][x4[i]].TiledBy = 4
 		fExpected.Cells[y4[i]][x4[i]].Status = "position"
 	}
-
-	for y := 0; y < fResult.Height; y ++ {
-		for x := 0; x < fResult.Width; x ++ {
-			st := "."
-			if fResult.Cells[y][x].Status == "wall" {
-				st = "+"
-			} else if fResult.Cells[y][x].TiledBy != 0 {
-				st = strconv.Itoa(fResult.Cells[y][x].TiledBy)
-			}
-			fmt.Printf("%s", st)
-		}
-		fmt.Printf("\n")
-	}
-	fmt.Printf("\n")
 
 	for y := 0; y < fResult.Height; y ++ {
 		for x := 0; x < fResult.Width; x ++ {
