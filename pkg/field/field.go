@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -52,6 +53,7 @@ func New() *Field {
 func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 	f.Width = fieldStatus.Width
 	f.Height = fieldStatus.Height
+	f.Turn = fieldStatus.Turn
 
 	f.Cells = make([][]*Cell, f.Height)
 	for y, fieldRow := range fieldStatus.Points {
@@ -64,6 +66,10 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 
 	for _, team := range fieldStatus.Teams {
 		fmt.Printf("\nTeams %+v\n", team)
+		teamData := &Team{
+			ID: team.TeamID,
+		}
+		f.Teams = append(f.Teams, teamData)
 		for _, agent := range team.Agents {
 			fmt.Printf("\nAgent: %d\n", agent.AgentID)
 			f.Agents[agent.AgentID] = &Agent{
@@ -75,6 +81,7 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 			}
 		}
 	}
+
 }
 
 // CalcPoint は現在のフィールドの指定されたチームIDの得点を計算します
@@ -474,9 +481,6 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 // ChangeCellToPositionByDFS は城壁を超えない範囲の連結成分をすべてteamIDの陣地にし、seenを更新します
 // teamID == -1 ならなにもしません
 func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, seen *[][]bool) {
-	if teamID == -1 {
-		return
-	}
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
 	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 
@@ -488,11 +492,14 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 		y := xy[1]
 
 		f.Cells[y][x].TiledBy = teamID
-		f.Cells[y][x].Status = "position"
+		if f.Cells[y][x].TiledBy != 0 {
+			f.Cells[y][x].Status = "position"
+		}
 		
 		for i := 0; i < 8; i ++ {
 			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
-				fmt.Printf("yabeeeeeeee");
+				fmt.Printf("yabeeeeeeee\n");
+				continue
 			}
 			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" {
 				continue
@@ -539,8 +546,6 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 					}
 				}
 
-				fmt.Printf("\n%d\n", len(isAreaBy))
-				
 				if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
 					SurroundedBy = append(SurroundedBy, team.ID)
 				}
@@ -554,7 +559,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 
 			switch len(SurroundedBy) {
 			case 0:
-				teamID = -1
+				teamID = 0
 			case 1:
 				teamID = SurroundedBy[0]
 			case 2:
@@ -568,6 +573,23 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			f.ChangeCellToPositionByDFS(teamID, x, y, &seen)
 		}
 	}
+
+
+	for y := range f.Cells {
+		for x := range f.Cells[y] {
+			st := "+"
+			if f.Cells[y][x].Status == "position" {
+				st = strconv.Itoa(f.Cells[x][y].TiledBy)
+			} else if f.Cells[y][x].Status == "free" {
+				st = "."
+			}
+			fmt.Printf("%s", st)
+		}
+		fmt.Printf("\n")
+	}
+	fmt.Printf("\n")
+
+
 }
 
 // ActAgents はエージェントの行動に基づいてフィールドを変更し、履歴を保存します。
