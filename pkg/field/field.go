@@ -471,9 +471,9 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 	return true
 }
 
-// PiyoPiyoFunction は城壁を超えない範囲の連結成分をすべてteamIDの陣地にし、seenを更新します
+// ChangeCellToPositionByDFS は城壁を超えない範囲の連結成分をすべてteamIDの陣地にし、seenを更新します
 // teamID == -1 ならなにもしません
-func (f *Field) PiyoPiyoFunction(teamID int, startX int, startY int, seen *[][]bool) {
+func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, seen *[][]bool) {
 	if teamID == -1 {
 		return
 	}
@@ -486,6 +486,10 @@ func (f *Field) PiyoPiyoFunction(teamID int, startX int, startY int, seen *[][]b
 		xy := st.Pop().([]int)
 		x := xy[0]
 		y := xy[1]
+
+		f.Cells[y][x].TiledBy = teamID
+		f.Cells[y][x].Status = "position"
+		
 		for i := 0; i < 8; i ++ {
 			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
 				fmt.Printf("yabeeeeeeee");
@@ -561,7 +565,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 				}
 			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
-			f.PiyoPiyoFunction(teamID, x, y, &seen)
+			f.ChangeCellToPositionByDFS(teamID, x, y, &seen)
 		}
 	}
 }

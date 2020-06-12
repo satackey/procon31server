@@ -340,6 +340,80 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	return f, isValid, updateActions, updateActionIDs
 }
 
+func TestChangeCellToPositionByDFS(t *testing.T) {
+	fResult, isValid, updateActions, updateActionIDs := GetTestCase02()
+	updateAction2s := fResult.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex := fResult.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := fResult.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = fResult.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			fResult.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	fExpected, _, _, _ := GetTestCase02()
+	updateAction2s = fExpected.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex = fExpected.RecordCellSelectedAgents(isValid, updateActions)
+	isApply = fExpected.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories = make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = fExpected.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			fExpected.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	x, y := 5, 9
+	seenResult := make([][]bool, fResult.Height)
+	for y := range seenResult {
+		seenResult[y] = make([]bool, fResult.Width)
+	}
+	fResult.ChangeCellToPositionByDFS(4, x, y, &seenResult)
+
+	seenExpected := [][]bool{
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false, true,false,false,false,false,false,false,},
+		{false,false,false,false,false, true, true,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+		{false,false,false,false,false,false,false,false,false,false,false,false,},
+	}
+	fExpected.Cells[8][5].TiledBy = 4
+	fExpected.Cells[8][5].Status = "position"
+	fExpected.Cells[9][5].TiledBy = 4
+	fExpected.Cells[9][5].Status = "position"
+	fExpected.Cells[9][6].TiledBy = 4
+	fExpected.Cells[9][6].Status = "position"
+
+	for yy := 0; yy < fResult.Height; yy ++ {
+		for xx := 0; xx < fResult.Width; xx ++ {
+			if seenResult[yy][xx] != seenExpected[yy][xx] {
+				t.Fatalf("\ny: %d, x: %d\nseenResult[y][x]: %v\nseenExpected[y][x]: %v\n", yy, xx, seenResult[yy][xx], seenExpected[yy][xx])
+			}
+			if fResult.Cells[yy][xx].TiledBy != fExpected.Cells[yy][xx].TiledBy {
+				t.Fatalf("\ny: %d, x: %d\nfResult.Cells[yy][xx].TiledBy: %d\nfExpected.Cells[yy][xx].TiledBy: %d\n", yy, xx, fResult.Cells[yy][xx].TiledBy, fExpected.Cells[yy][xx].TiledBy)
+			}
+			if fResult.Cells[yy][xx].Status != fExpected.Cells[yy][xx].Status {
+				t.Fatalf("\ny: %d, x: %d\nfResult.Cells[yy][xx].Status: %s\nfExpected.Cells[yy][xx].Status: %s\n", yy, xx, fResult.Cells[yy][xx].Status, fExpected.Cells[yy][xx].Status)
+			}
+		}
+	}
+
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("ChangeCellToPositionByDFS() is correct!!!")
+	}
+}
+
 func TestFinalCheckByDFS(t *testing.T) {
 	f, isValid, updateActions, updateActionIDs := GetTestCase02()
 	updateAction2s := f.MakeUpdateAction2s(updateActions, updateActionIDs)
@@ -353,8 +427,8 @@ func TestFinalCheckByDFS(t *testing.T) {
 		}
 	}
 
-	x := []int{6, 9, 7}
-	y := []int{2, 5, 7}
+	y := []int{6, 9, 7}
+	x := []int{2, 5, 7}
 	expected := []bool{false, false, true}
 
 	for i := 0; i < 3; i ++ {
@@ -369,10 +443,10 @@ func TestFinalCheckByDFS(t *testing.T) {
 			}
 		}
 		if f.CheckAreaByDFS(3, x[i], y[i], &isAreaBy) != true {
-			t.Fatalf("\nerror\n")
+			t.Fatalf("\ni: %d\n3 error\n", i)
 		}
 		if f.CheckAreaByDFS(4, x[i], y[i], &isAreaBy) != true {
-			t.Fatalf("\nerror\n")
+			t.Fatalf("\ni: %d\n4 error\n", i)
 		}
 		if f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]) != expected[i] {
 			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]), expected[i])
@@ -412,10 +486,10 @@ func TestCheckAreaByDFS(t *testing.T) {
 	}
 
 	if f.CheckAreaByDFS(3, x, y, &result) != true {
-		t.Fatalf("error")
+		t.Fatalf("\n3 error\n")
 	}
 	if f.CheckAreaByDFS(4, x, y, &result) != true {
-		t.Fatalf("error")
+		t.Fatalf("\n4 error\n")
 	}
 
 	expected := map[int][][]bool{}
