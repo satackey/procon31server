@@ -1,7 +1,6 @@
 package field
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -355,13 +354,16 @@ func TestCheckAreaByDFS(t *testing.T) {
 	}
 
 	x, y := 7, 7
-	allFalseSlice := make([][]bool, f.Height)
-	for y := 0; y < f.Height; y ++ {
-		allFalseSlice[y] = make([]bool, f.Width)
-	}
+
 	result := map[int][][]bool{
-		3: allFalseSlice,
-		4: allFalseSlice,
+		3: {},
+		4: {},
+	}
+	for teamID := range result {
+		result[teamID] = make([][]bool, f.Height)
+		for y := range result[teamID] {
+			result[teamID][y] = make([]bool, f.Width)
+		}
 	}
 
 	if f.CheckAreaByDFS(3, x, y, &result) != true {
@@ -371,7 +373,6 @@ func TestCheckAreaByDFS(t *testing.T) {
 		t.Fatalf("error")
 	}
 
-	// todo: expectedを書くぞ～
 	expected := map[int][][]bool{}
 	expected[3] = [][]bool{
 		{false,false,false,false,false,false,false,false,false,false,false,false,},
@@ -419,19 +420,11 @@ func TestCheckAreaByDFS(t *testing.T) {
 				t.Fatalf("\ni: %d, y: %d\nlen(result[i][y]): %d\nlen(expected[i][y]): %d\n", i, y, len(result[i][y]), len(expected[i][y]))
 			}
 			for x := range result[i][y] {
-				st := "."
-				if result[i][y][x] == true {
-					st = "@"
+				if result[i][y][x] != expected[i][y][x] {
+					t.Fatalf("\ni: %d, y: %d, x: %d\nresult[i][y][x]: %v\nexpected[i][y][x]: %v\n", i, y, x, result[i][y][x], expected[i][y][x])
 				}
-				// どうやらresult[3]がresult[4]に書き換えられているっぽい。
-				fmt.Printf("%s", st)
-				// if result[i][y][x] != expected[i][y][x] {
-				// 	t.Fatalf("\ni: %d, y: %d, x: %d\nresult[i][y][x]: %v\nexpected[i][y][x]: %v\n", i, y, x, result[i][y][x], expected[i][y][x])
-				// }
 			}
-			fmt.Printf("\n")
 		}
-		fmt.Printf("\n")
 	}
 
 }
@@ -441,7 +434,6 @@ func TestActAgents(t *testing.T) {
 	expected, _, _, _ := GetTestCase01()
 
 	result.ActAgents(isValid, updateActions, updateActionIDs)
-	// todo: expectedを変更する
 	expected.ActionHistories = []ActionHistory{
 		{},
 		{
