@@ -1,6 +1,7 @@
 package field
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -338,6 +339,79 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	updateActionIDs := []int{3, 4}
 
 	return f, isValid, updateActions, updateActionIDs
+}
+
+func TestCleanUpCellsFormerlyWall(t *testing.T) {
+	fResult, isValid, updateActions, updateActionIDs := GetTestCase02()
+	updateAction2s := fResult.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex := fResult.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := fResult.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = fResult.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			fResult.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	fExpected, _, _, _ := GetTestCase02()
+	updateAction2s = fExpected.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex = fExpected.RecordCellSelectedAgents(isValid, updateActions)
+	isApply = fExpected.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories = make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = fExpected.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			fExpected.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	fResult.CleanUpCellsFormerlyWall()
+
+	y3 := []int{1,1,1,3,3,3,4,4,4,7,8,8,10,10,11,11,11,11,11,11,11}
+	x3 := []int{1,2,3,5,6,7,1,2,3,7,2,3,2,3,4,5,6,7,8,9,10}
+	y4 := []int{5,5,5,5,6,6,6,6,8,8,9,9,9,9}
+	x4 := []int{5,6,8,9,2,3,5,9,5,9,5,6,8,9}
+
+	for i := range y3 {
+		fExpected.Cells[y3[i]][x3[i]].TiledBy = 3
+		fExpected.Cells[y3[i]][x3[i]].Status = "position"
+	}
+	for i := range y4 {
+		fExpected.Cells[y4[i]][x4[i]].TiledBy = 4
+		fExpected.Cells[y4[i]][x4[i]].Status = "position"
+	}
+
+	for y := 0; y < fResult.Height; y ++ {
+		for x := 0; x < fResult.Width; x ++ {
+			st := "."
+			if fResult.Cells[y][x].Status == "wall" {
+				st = "+"
+			} else if fResult.Cells[y][x].TiledBy != 0 {
+				st = fmt.Sprintf("%d", fResult.Cells[y][x].TiledBy)
+			}
+			fmt.Printf("%s", st)
+		}
+		fmt.Printf("\n")
+	}
+	fmt.Printf("\n")
+
+	for y := 0; y < fResult.Height; y ++ {
+		for x := 0; x < fResult.Width; x ++ {
+			if fResult.Cells[y][x].TiledBy != fExpected.Cells[y][x].TiledBy {
+				t.Fatalf("\ny: %d, x: %d\nresult.TiledBy: %d\nexpected.TiledBy: %d\n", y, x, fResult.Cells[y][x].TiledBy, fExpected.Cells[y][x].TiledBy)
+			}
+			if fResult.Cells[y][x].Status != fExpected.Cells[y][x].Status {
+				t.Fatalf("\ny: %d, x: %d\nresult.Status: %s\nexpected.Status: %s\n", y, x, fResult.Cells[y][x].Status, fExpected.Cells[y][x].Status)
+			}
+		}
+	}
+
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("CleanUpCellsFormerlyWall() is correct!!!")
+	}
+
 }
 
 func TestChangeCellToPositionByDFS(t *testing.T) {
