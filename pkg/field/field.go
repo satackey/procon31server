@@ -524,6 +524,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			// 各チームの城壁で囲まれているかチェック
 			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
 			var isAreaBy map[int][][]bool
+			// (x, y) を囲んでいる城壁のteamIDのスライス
 			SurroundedBy := []int{}
 			for _, team := range f.Teams {
 				isAreaBy[team.ID] = make([][]bool, f.Height)

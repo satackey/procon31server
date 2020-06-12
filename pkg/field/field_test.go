@@ -340,6 +340,51 @@ func GetTestCase02() (*Field, []bool, []*apispec.UpdateAction, []int) {
 	return f, isValid, updateActions, updateActionIDs
 }
 
+func TestFinalCheckByDFS(t *testing.T) {
+	f, isValid, updateActions, updateActionIDs := GetTestCase02()
+	updateAction2s := f.MakeUpdateAction2s(updateActions, updateActionIDs)
+	selectedAgentsIndex := f.RecordCellSelectedAgents(isValid, updateActions)
+	isApply := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	agentActionHistories := make([]AgentActionHistory, len(updateActions))
+	for i, updateAction := range updateActions {
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		if agentActionHistories[i].Apply == 1 {
+			f.ActuallyActAgent(updateAction2s[i])
+		}
+	}
+
+	x := []int{6, 9, 7}
+	y := []int{2, 5, 7}
+	expected := []bool{false, false, true}
+
+	for i := 0; i < 3; i ++ {
+		isAreaBy := map[int][][]bool{
+			3: {},
+			4: {},
+		}
+		for teamID := range isAreaBy {
+			isAreaBy[teamID] = make([][]bool, f.Height)
+			for y := range isAreaBy[teamID] {
+				isAreaBy[teamID][y] = make([]bool, f.Width)
+			}
+		}
+		if f.CheckAreaByDFS(3, x[i], y[i], &isAreaBy) != true {
+			t.Fatalf("\nerror\n")
+		}
+		if f.CheckAreaByDFS(4, x[i], y[i], &isAreaBy) != true {
+			t.Fatalf("\nerror\n")
+		}
+		if f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]) != expected[i] {
+			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]), expected[i])
+		}
+	}
+
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("FinalCheckByDFS() is correct!!!")
+	}
+}
+
 func TestCheckAreaByDFS(t *testing.T) {
 	f, isValid, updateActions, updateActionIDs := GetTestCase02()
 	updateAction2s := f.MakeUpdateAction2s(updateActions, updateActionIDs)
@@ -427,6 +472,10 @@ func TestCheckAreaByDFS(t *testing.T) {
 		}
 	}
 
+	// テストが成功しているなら褒める
+	if t.Failed() == false {
+		t.Logf("CheckAreaByDFS() is correct!!!")
+	}
 }
 
 func TestActAgents(t *testing.T) {
@@ -665,8 +714,6 @@ func TestActAgents(t *testing.T) {
 	if t.Failed() == false {
 		t.Logf("ActAgents() is correct!!!")
 	}
-
-	t.Log("Test is finished.")
 }
 
 func TestActuallyActAgent(t *testing.T) {
@@ -810,8 +857,6 @@ func TestConvertIntoHistory(t *testing.T) {
 		t.Logf("ConvertIntoHistory() is correct!!!")
 	}
 
-	t.Log("Test is finished.")
-
 }
 
 func TestDetermineIfApplied(t *testing.T) {
@@ -837,8 +882,6 @@ func TestDetermineIfApplied(t *testing.T) {
 	if t.Failed() == false {
 		t.Logf("DetermineIfApplied() is correct!!!")
 	}
-
-	t.Log("Test is finished.")
 
 }
 
@@ -890,6 +933,4 @@ func TestCellSelectedTimesCount(t *testing.T) {
 	if t.Failed() == false {
 		t.Logf("RecordCellSelectedAgents() is correct!!!")
 	}
-
-	t.Log("Test is finished.")
 }
