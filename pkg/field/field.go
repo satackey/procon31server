@@ -236,16 +236,8 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 	return selectedAgents
 }
 
-// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply に保存します
-func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int) []int {
-	// isApply を初期化
-	isApply := make([]int, len(updateActions))
-	for i := range isApply {
-		isApply[i] = 1
-	}
-
-	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
-	// 競合しているセルをstackに突っ込む
+// GiveNewStack は競合しているマスが入れられたスタックのポインタを返します
+func (f *Field) GiveNewStack(selectedAgentsIndex [][][]int) *stack.Stack {
 	stk := stack.New()
 	for y := range selectedAgentsIndex {
 		for x := range selectedAgentsIndex[y] {
@@ -256,6 +248,20 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 			}
 		}
 	}
+	return stk
+}
+
+// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply に保存します
+func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int) []int {
+	// isApply を初期化
+	isApply := make([]int, len(updateActions))
+	for i := range isApply {
+		isApply[i] = 1
+	}
+
+	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
+	// 競合しているセルをstackに突っ込む
+	stk := f.GiveNewStack(selectedAgentsIndex)
 
 	// 不正行動は先にはじいておく
 	for i := range isValid {
