@@ -396,6 +396,18 @@ func (f *Field) IsOutsideField(x int, y int) bool {
 	return false
 }
 
+// IsWallOrSeen は壁の中、もしくは既に見ているマスならtrueを返します
+func (f *Field) IsWallOrSeen(y int, x int, teamID int, seen [][]bool) bool {
+	res := false
+	if f.Cells[y][x].Status == "wall" && f.Cells[y][x].TiledBy == teamID {
+		res = true
+	}
+	if seen[y][x] == true {
+		res = true
+	}
+	return res
+}
+
 // CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録します
 func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
@@ -422,10 +434,7 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 				outsideFlag = true
 				break FOR_LABEL
 			}
-			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" && f.Cells[y+dy[i]][x+dx[i]].TiledBy == teamID {
-				continue
-			}
-			if seen[y+dy[i]][x+dx[i]] == true {
+			if f.IsWallOrSeen(y+dy[i], x+dx[i], teamID, seen) == true {
 				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
