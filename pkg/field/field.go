@@ -297,7 +297,6 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 		Turn:    f.Turn + 1,
 		Apply:   isApply,
 	}
-
 	if updateAction.Type == "put" {
 		agentActionHistory.X = updateAction.X
 		agentActionHistory.Y = updateAction.Y
@@ -396,16 +395,15 @@ func (f *Field) IsOutsideField(x int, y int) bool {
 	return false
 }
 
-// IsWallOrSeen は壁の中、もしくは既に見ているマスならtrueを返します
-func (f *Field) IsWallOrSeen(y int, x int, teamID int, seen [][]bool) bool {
-	res := false
+// IsWallByteamIDOrSeen はteamIDの壁の中、もしくは既に見ているマスならtrueを返します
+func (f *Field) IsWallByteamIDOrSeen(x int, y int, teamID int, seen [][]bool) bool {
 	if f.Cells[y][x].Status == "wall" && f.Cells[y][x].TiledBy == teamID {
-		res = true
+		return true
 	}
 	if seen[y][x] == true {
-		res = true
+		return true
 	}
-	return res
+	return false
 }
 
 // CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録します
@@ -434,7 +432,7 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 				outsideFlag = true
 				break FOR_LABEL
 			}
-			if f.IsWallOrSeen(y+dy[i], x+dx[i], teamID, seen) == true {
+			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) == true {
 				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
@@ -475,7 +473,7 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 			if  f.IsOutsideField(x + dx[i], y + dy[i]) == true || isArea[y+dy[i]][x+dx[i]] == false {
 				return false
 			}
-			if f.IsWallOrSeen(y+dy[i], x+dx[i], teamID, seen) == true {
+			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) == true {
 				continue;
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
@@ -484,6 +482,17 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 	}
 
 	return true
+}
+
+// IsWallOrSeen は壁の中、もしくは既に見ているマスならtrueを返します
+func (f *Field) IsWallOrSeen(x int, y int, seen [][]bool) bool {
+	if f.Cells[y][x].Status == "wall" {
+		return true
+	}
+	if seen[y][x] == true {
+		return true
+	}
+	return false
 }
 
 // ChangeCellToPositionByDFS は城壁を超えない範囲の連結成分をすべてteamIDの陣地にし、seenを更新します
@@ -505,18 +514,27 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 		}
 		
 		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
-				fmt.Printf("yabeeeeeeee\n");
-				continue
-			}
-			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" {
-				continue
-			}
-			if (*seen)[y+dy[i]][x+dx[i]] == true {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) == true || f.IsWallOrSeen(x+dx[i], y+dy[i], *seen) == true {
 				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
 			(*seen)[y+dy[i]][x+dx[i]] = true
+		}
+	}
+}
+
+// SurroundedByWoHenkou は色々変更してるらしいです
+func (f *Field) SurroundedByWoHenkou(x int, y int, SurroundedBy []int, isAreaBy map[int][][]bool) {
+	for _, team := range f.Teams {
+		isAreaBy[team.ID] = make([][]bool, f.Height)
+		for yy := 0; yy < f.Height; yy ++ {
+			isAreaBy[team.ID][yy] = make([]bool, f.Width)
+			for xx := 0; xx < f.Width; xx ++ {
+				isAreaBy[team.ID][yy][xx] = false
+			}
+		}
+		if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
+			SurroundedBy = append(SurroundedBy, team.ID)
 		}
 	}
 }
@@ -534,10 +552,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 
 	for y := range seen {
 		for x := range seen[y] {
-			if seen[y][x] == true {
-				continue
-			}
-			if f.Cells[y][x].Status == "wall" {
+			if f.IsWallOrSeen(x, y, seen) == true {
 				continue
 			}
 			// 各チームの城壁で囲まれているかチェック
@@ -545,19 +560,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			isAreaBy := map[int][][]bool{}
 			// (x, y) を囲んでいる城壁のteamIDのスライス
 			SurroundedBy := []int{}
-			for _, team := range f.Teams {
-				isAreaBy[team.ID] = make([][]bool, f.Height)
-				for yy := 0; yy < f.Height; yy ++ {
-					isAreaBy[team.ID][yy] = make([]bool, f.Width)
-					for xx := 0; xx < f.Width; xx ++ {
-						isAreaBy[team.ID][yy][xx] = false
-					}
-				}
-
-				if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
-					SurroundedBy = append(SurroundedBy, team.ID)
-				}
-			}
+			f.SurroundedByWoHenkou(x, y, SurroundedBy, isAreaBy)
 
 			var teamID int
 
