@@ -3,18 +3,21 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"log"
 	"net/http"
 
+	// "encoding/json"
 	"github.com/ant0ine/go-json-rest/rest"
-
 	// "../apisec/apisec.go"
+	"github.com/satackey/procon31server/pkg/apispec"
 
 	"sync"
 )
 
 func main() {
+
+	// var a apisec.Match
 
 	log.Println("localhost:3000 でサーバを起動しました")
 	api := rest.NewApi()
@@ -64,14 +67,14 @@ func PingsThings(w rest.ResponseWriter, r *rest.Request) {
 //     Id int `json:id`
 // }
 
-type Match struct {
-	Id             int    `json:"id"`             // 試合のid
-	IntervalMillis int    `json:"intervalMillis"` // ターンとターンの間の時間
-	MatchTo        string `json:"matchTo"`        // 対戦相手の名前
-	TeamID         int    `json:"teamID"`         // 自分のteamid
-	TurnMillis     int    `json:"turnMillis"`     // 1ターンの(制限?)時間
-	Turns          int    `json:"turns"`          // 試合のターン数
-}
+// type Match struct {
+// 	Id             int    `json:"id"`             // 試合のid
+// 	IntervalMillis int    `json:"intervalMillis"` // ターンとターンの間の時間
+// 	MatchTo        string `json:"matchTo"`        // 対戦相手の名前
+// 	TeamID         int    `json:"teamID"`         // 自分のteamid
+// 	TurnMillis     int    `json:"turnMillis"`     // 1ターンの(制限?)時間
+// 	Turns          int    `json:"turns"`          // 試合のターン数
+// }
 
 // var store = map[int]*Match{}
 
@@ -79,7 +82,7 @@ var lock = sync.RWMutex{}
 
 func PostMatch(w rest.ResponseWriter, r *rest.Request) {
 	// country := new(Country)
-	matchstruct := Match{}
+	matchstruct := apispec.Match{}
 	// fmt.Print(country) { }が入ってた 初期化されている
 
 	// リクエストを読み取り, json.UnmarshalでJSONをデコードしてる
@@ -89,7 +92,7 @@ func PostMatch(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
 		return
 	}
-	if matchstruct.Id == 0 {
+	if matchstruct.ID == 0 {
 		rest.Error(w, "country id required", 400)
 		return
 	}
@@ -144,6 +147,37 @@ func MyResponse(w ResponseWriter, error string, code int) {
 	}
 }
 
+var StartAtUnixTime = "startAtUnixTime"
+var googlemap = map[int]*TwoResponse{}
+
+func DoubleResponse(w ResponseWriter, error string, unixtime int, code int) {
+	// googlemap := TwoResponse{}
+	w.WriteHeader(code)
+	// err := w.WriteJson(map[string]string{ErrorFieldName: error, StartAtUnixTime: unixtime})
+	err := w.WriteJson(TwoResponse{Status: error, UnixTime: unixtime})
+	if err != nil {
+		panic(err)
+	}
+}
+
+type TwoResponse struct {
+	UnixTime int    `json:"startAtUnixTime"`
+	Status   string `json:"status"`
+}
+
+// func JsonResponse(w rest.ResponseWriter, r *rest.Request) {
+// 	response := TwoResponse{startAtUnixTime, "InvalidMatches"}
+
+// 	res, err := r.DecodeJsonPayload(response)
+
+// 	// if err != nil {
+// 	// 	rest.Error(w, err.Error(), rest.)
+// 	// }
+
+// 	Header().Set("Content-Type", "application/json")
+// 	w.write(res)
+// }
+
 func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
 	lock.RLock()
 	// manymatches := make([]Match, len(store)) // mapを初期化してる storeの数だけ場所を確保している
@@ -179,7 +213,7 @@ func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
 func PostAction(w rest.ResponseWriter, r *rest.Request) {
 
 	// actionstruct := UpdateAction{}
-	matchstruct := Match{}
+	matchstruct := apispec.Match{}
 
 	err := r.DecodeJsonPayload(&matchstruct)
 	if err != nil {
@@ -191,7 +225,7 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
 		return
 	}
-	if matchstruct.Id == 0 {
+	if matchstruct.ID == 0 {
 		rest.Error(w, "country id required", 400)
 		return
 	}
@@ -223,14 +257,14 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 	return
 }
 
-type UpdateAction struct {
-	AgentID int    `json:"agentID"`
-	DX      int    `json:"dx"`
-	DY      int    `json:"dy"`
-	Type    string `json:"type"`
-	Turn    int    `json:"turn"`
-	// Array   []Agent `json:"agents"`
-}
+// type UpdateAction struct {
+// 	AgentID int    `json:"agentID"`
+// 	DX      int    `json:"dx"`
+// 	DY      int    `json:"dy"`
+// 	Type    string `json:"type"`
+// 	Turn    int    `json:"turn"`
+// 	// Array   []Agent `json:"agents"`
+// }
 
 // TODO:変数名をちゃんと考える
 // var store_2 = map[int]*UpdateAction{}
@@ -242,12 +276,12 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 	// var id int
 	// id, _ = strconv.Atoi(id_val)
 
-	NewActionStruct := UpdateAction{}
+	NewActionStruct := apispec.UpdateAction{}
 
 	// turnが変更されないか監視するための変数(decodeされる前なのでpostされる値はまだ入っていない(に等しい))
-	NewActionStruct.Turn = 5
-	CheckTurnVal := NewActionStruct.Turn
-	fmt.Println(CheckTurnVal)
+	// NewActionStruct.Turn = 5
+	// CheckTurnVal := NewActionStruct.Turn
+	// fmt.Println(CheckTurnVal)
 	err := r.DecodeJsonPayload(&NewActionStruct)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
@@ -266,8 +300,20 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "dx ないぞ", 400)
 		return
 	}
+	// TODO
+	if NewActionStruct.DX >= 3 {
+		// rest.Error(w, "dx そんなに動けん ", 400)
+		DoubleResponse(w, "InvalidMatches", 0, 400)
+		// response := TwoResponse{0, "InvalidMatches"}
+		return
+	}
+
 	if NewActionStruct.DY == 0 {
 		rest.Error(w, "dy required", 400)
+		return
+	}
+	if NewActionStruct.DY >= 3 {
+		rest.Error(w, "dy そんなに動けん", 400)
 		return
 	}
 	if NewActionStruct.Type == "" {
@@ -276,9 +322,9 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 	}
 
 	// turnが書き換えられていないか確認している
-	if CheckTurnVal != NewActionStruct.Turn {
-		NewActionStruct.Turn = CheckTurnVal
-	}
+	// if CheckTurnVal != NewActionStruct.Turn {
+	// 	NewActionStruct.Turn = CheckTurnVal
+	// }
 
 	// lock.Lock()
 	// FieldStatusActionStruct := FieldStatusAction{}
@@ -293,16 +339,16 @@ func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
 	return
 }
 
-type FieldStatusAction struct {
-	AgentID int    `json:"agentID"`
-	DX      int    `json:"dx"`
-	DY      int    `json:"dy"`
-	Type    string `json:"type"`
-	Apply   int    `json:"apply"`
-	Turn    int    `json:"turn"`
-}
+// type FieldStatusAction struct {
+// 	AgentID int    `json:"agentID"`
+// 	DX      int    `json:"dx"`
+// 	DY      int    `json:"dy"`
+// 	Type    string `json:"type"`
+// 	Apply   int    `json:"apply"`
+// 	Turn    int    `json:"turn"`
+// }
 
-var ActionStore = map[int]*FieldStatusAction{}
+var ActionStore = map[int]*apispec.FieldStatusAction{}
 
 // Matchのidを判別しつつUpdateActionをGetする
 func GetUpdateAction(w rest.ResponseWriter, r *rest.Request) {
