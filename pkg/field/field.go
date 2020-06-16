@@ -472,17 +472,11 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
+			if  f.IsOutsideField(x + dx[i], y + dy[i]) == true || isArea[y+dy[i]][x+dx[i]] == false {
 				return false
 			}
-			if isArea[y+dy[i]][x+dx[i]] == false {
-				return false
-			}
-			if f.Cells[y+dy[i]][x+dx[i]].Status == "wall" && f.Cells[y+dy[i]][x+dx[i]].TiledBy == teamID {
-				continue
-			}
-			if seen[y+dy[i]][x+dx[i]] == true {
-				continue
+			if f.IsWallOrSeen(y+dy[i], x+dx[i], teamID, seen) == true {
+				continue;
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
 			seen[y+dy[i]][x+dx[i]] = true
