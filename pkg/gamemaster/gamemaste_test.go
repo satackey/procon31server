@@ -40,6 +40,13 @@ func RandString1(n int) string {
 	return string(b)
 }
 
+// 0 ～ 配列の要素数までのランダム値取得
+func choice(s []string) string {
+	rand.Seed(time.Now().UnixNano()) // 乱数のシードとして現在時刻のナノ秒を渡す
+	i := rand.Intn(len(s))           // 0 ～ 配列の要素数までのランダム値取得
+	return s[i]
+}
+
 func TestConnectDB(t *testing.T) {
 	gm := &GameMaster{}
 	err := gm.ConnectDB()
@@ -49,6 +56,8 @@ func TestConnectDB(t *testing.T) {
 		return
 	}
 }
+
+// TestConnectDBを関数化
 func createGameMasterInstanceConnectedDB(tb testing.TB) *GameMaster {
 	gm := &GameMaster{}
 	err := gm.ConnectDB()
@@ -59,23 +68,47 @@ func createGameMasterInstanceConnectedDB(tb testing.TB) *GameMaster {
 	return gm
 }
 
+var registerTeams []string = []string{}
+
 func TestRegisterTeam(t *testing.T) {
 	gm := createGameMasterInstanceConnectedDB(t)
+	words := []string{"苫小牧", "旭川", "函館", "釧路", "帯広"}
 
+	name := choice(words)
 	globalid := RandString1(10)
-	err := gm.RegisterTeam(globalid, "学校名")
+	err := gm.RegisterTeam(globalid, name)
+	// "学校名"だけだとおもしろくないから適当な地名にしてみた、動くかな？
 	if err != nil {
 		t.Fatalf("チーム登録 失敗: %s", err)
 		return
 	}
 	// Todo: チーム削除
+	registerTeams = append(registerTeams, globalid)
+}
+
+// TestRegisterTeamを関数化
+func registerTeam(tb testing.TB) (string, error) {
+	gm := createGameMasterInstanceConnectedDB(tb)
+	words := []string{"苫小牧", "旭川", "函館", "釧路", "帯広"}
+
+	name := choice(words)
+	globalid := RandString1(10)
+	err := gm.RegisterTeam(globalid, name)
+	// "学校名"だけだとおもしろくないから適当な地名にしてみた、動くかな？
+	if err != nil {
+		tb.Fatalf("チーム登録 失敗: %s", err)
+		return "", nil
+	}
+
+	// Todo: チーム削除
+	registerTeams = append(registerTeams, globalid)
+	return globalid, nil
 }
 
 func TestTeamExistsAri(t *testing.T) {
 	gm := createGameMasterInstanceConnectedDB(t)
 
-	globalid := RandString1(10)
-	err := gm.RegisterTeam(globalid, "学校名")
+	globalid, err := registerTeam(t)
 	if err != nil {
 		t.Fatalf("チーム登録の時点で失敗: %s", err)
 		return
@@ -138,7 +171,10 @@ func createMatch(tb testing.TB) int {
 		Actions:           []apispec.FieldStatusAction{},
 	}
 
-	matchID, err := gm.CreateMatch(&TestCase, 1599066568, 15000, 2000, 15, "7r64phsgztwm2n4wr27du7nmxnxgaemt3wnnzwxaxc53dw7yt3", "haae42hngzahwewty5azjnnpgaxbibnfyfugpbhd7hmrds2sy7")
+	globalid1, err := registerTeam(tb)
+	globalid2, err := registerTeam(tb)
+
+	matchID, err := gm.CreateMatch(&TestCase, 1599066568, 15000, 2000, 15, globalid1, globalid2)
 	if err != nil {
 		tb.Fatalf("マッチ登録 失敗: %s", err)
 		return 0
@@ -149,6 +185,7 @@ func createMatch(tb testing.TB) int {
 	return matchID
 }
 
+// MatchとTeamを削除
 func deleteAllCreatedMatch() error {
 	for _, id := range createdMatchIDs {
 		match, err := GetMatch(id)
@@ -160,6 +197,18 @@ func deleteAllCreatedMatch() error {
 			return err
 		}
 	}
+
+	for _, id := range registerTeams {
+		team, err := GetTeam(id)
+		if err != nil {
+			return err
+		}
+		err = team.Delete()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

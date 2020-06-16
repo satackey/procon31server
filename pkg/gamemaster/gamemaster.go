@@ -25,7 +25,7 @@ type Match struct {
 // Team は
 type Team struct {
 	JoinedMatchesByLocalTeamID map[int]*joinedMatch // Key: LocalTeamID と Value: MatchID の紐付けをする
-	id                         int
+	id                         string
 	DB                         *sql.DB
 }
 
@@ -44,6 +44,7 @@ type GameMaster struct {
 	DB                         *sql.DB
 }
 
+// GetMatch は
 func GetMatch(id int) (*Match, error) {
 	// matchが存在するか調べる
 	db, err := db.GetDBConnection()
@@ -77,39 +78,39 @@ func GetMatch(id int) (*Match, error) {
 	return &Match{}, errors.New(message)
 }
 
-// func GetTeam(id int) (*Team, error) {
-// 	// matchが存在するか調べる
-// 	db, err := db.GetDBConnection()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("GetDBConnection 失敗: %w", err)
-// 	}
+// GetTeam は
+func GetTeam(id string) (*Team, error) {
+	// teamが存在するか調べる
+	db, err := db.GetDBConnection()
+	if err != nil {
+		return nil, fmt.Errorf("GetDBConnection 失敗: %w", err)
+	}
 
-// 	sql := fmt.Sprintf("SELECT id FROM `teams` WHERE `id` = '%d'", id)
-// 	match, err := db.Query(sql)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("データベースに接続できませんでした: %w", err)
-// 	}
+	sql := fmt.Sprintf("SELECT global_id FROM `teams` WHERE `global_id` = '%s'", id)
+	team, err := db.Query(sql)
+	if err != nil {
+		return nil, fmt.Errorf("データベースに接続できませんでした: %w", err)
+	}
 
-// 	for match.Next() {
-// 		var queriedid int
-// 		if err := match.Scan(&queriedid); err != nil {
-// 			return nil, fmt.Errorf("情報の抽出に失敗しました: %w", err)
-// 		}
+	for team.Next() {
+		var queriedid string
+		if err := team.Scan(&queriedid); err != nil {
+			return nil, fmt.Errorf("情報の抽出に失敗しました: %w", err)
+		}
 
-// 		if id == queriedid {
-// 			result := &Match{
-// 				id: id,
-// 				DB: db,
-// 			}
+		if id == queriedid {
+			result := &Team{
+				id: id,
+				DB: db,
+			}
 
-// 			return result, nil
-// 		}
-// 	}
+			return result, nil
+		}
+	}
 
-// 	message := fmt.Sprintf("id: %dが存在しません", id)
-// 	return &Match{}, errors.New(message)
-// }
-// Todo ここからやる
+	message := fmt.Sprintf("id: %sが存在しません", id)
+	return &Team{}, errors.New(message)
+}
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
 func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
@@ -137,13 +138,13 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	fieldJson := "{}"
+	fieldJSON := "{}"
 
 	sql := fmt.Sprintf("")
 
 	// creatematch, err := g.DB.QueryRow(sql)
 	stmt, err := g.DB.Prepare("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, ?, ?, ?, ?, ?)")
-	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fieldJson)
+	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fieldJSON)
 	if err != nil {
 		return 0, fmt.Errorf("データベースに接続できませんでした1: %w", err)
 	}
@@ -219,6 +220,7 @@ func (m *Match) StartAutoTurnUpdate() {
 	}()
 }
 
+// UpdateTurn は 盤面を更新する
 func (m *Match) UpdateTurn() error {
 	sql := fmt.Sprintf("SELECT update_actions FROM `match_teams` WHERE `match_id` = %d", m.id)
 	table, err := m.DB.Query(sql)
@@ -310,6 +312,7 @@ func (g *GameMaster) RegisterTeam(globalTeamID string, name string) error {
 	return nil
 }
 
+// TeamExists は globalTeamIDが存在するか確認する
 func (g *GameMaster) TeamExists(globalTeamID string) (bool, error) {
 	sql := fmt.Sprintf("SELECT global_id FROM `teams` WHERE `global_id` = '%s'", globalTeamID)
 	teams, err := g.DB.Query(sql)
@@ -359,6 +362,7 @@ func (g *GameMaster) TeamExists(globalTeamID string) (bool, error) {
 // 	return &result, nil
 // }
 
+// ConnectDB は DBに接続する
 func (g *GameMaster) ConnectDB() error {
 	db, err := db.GetDBConnection()
 	if err != nil {
@@ -368,6 +372,7 @@ func (g *GameMaster) ConnectDB() error {
 	return nil
 }
 
+// Delete は matchesとmatch_teamsのidを削除する
 func (m *Match) Delete() error {
 	sql := fmt.Sprintf("DELETE FROM `matches` WHERE `id` = '%d'", m.id)
 	_, err := m.DB.Query(sql)
@@ -383,8 +388,9 @@ func (m *Match) Delete() error {
 	return nil
 }
 
+// Delete は teamsのglobal_idを削除する
 func (t *Team) Delete() error {
-	sql := fmt.Sprintf("DELETE FROM `match_teams` WHERE `match_id` = '%d'", t.id)
+	sql := fmt.Sprintf("DELETE FROM `teams` WHERE `global_id` = '%s'", t.id)
 	_, err := t.DB.Query(sql)
 	if err != nil {
 		return fmt.Errorf("Delete 失敗: %w", err)
