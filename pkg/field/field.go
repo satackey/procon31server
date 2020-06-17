@@ -406,10 +406,8 @@ func (f *Field) IsWallByteamIDOrSeen(x int, y int, teamID int, seen [][]bool) bo
 	return false
 }
 
-// CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録します
-func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map[int][][]bool) bool {
-	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
-	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
+// CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録して返し、囲われていればtrueを返します
+func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bool) {
 	seen := make([][]bool, f.Height)
 	for i := 0; i < f.Height; i ++ {
 		seen[i] = make([]bool, f.Width)
@@ -417,20 +415,18 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 			seen[i][j] = false
 		}
 	}
-	outsideFlag := false
-
+	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
+	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 	st := stack.New()
 	st.Push([]int{startX, startY})
 	seen[startY][startX] = true
-	FOR_LABEL:
 	for st.Len() != 0 {
 		xy := st.Pop().([]int)
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
 			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
-				outsideFlag = true
-				break FOR_LABEL
+				return nil, false
 			}
 			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) == true {
 				continue
@@ -439,16 +435,7 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 			seen[y+dy[i]][x+dx[i]] = true
 		}
 	}
-
-	if outsideFlag {
-		return false
-	}
-	for y := 0; y < f.Height; y ++ {
-		for x := 0; x < f.Width; x ++ {
-			(*isAreaBy)[teamID][y][x] = seen[y][x]
-		}
-	}
-	return true
+	return seen, true
 }
 
 // FinalCheckByDFS はSurroundedBy[1]の中で、SurroundedBy[0]で囲めるならtrueを返します
@@ -524,7 +511,7 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 }
 
 // SurroundedByWoHenkou はセル(x, y)を囲っているチームIDと、実際にどこのセルが囲まれているかを記録して返します
-func (f *Field) SurroundedByWoHenkou(x int, y int) ([]int, map[int][][]bool) {
+func (f *Field) SurroundedByWoHenkou(startX int, startY int) ([]int, map[int][][]bool) {
 	// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
 	isAreaBy := map[int][][]bool{}
 	// (x, y) を囲んでいる城壁のteamIDのスライス
@@ -532,13 +519,17 @@ func (f *Field) SurroundedByWoHenkou(x int, y int) ([]int, map[int][][]bool) {
 
 	for _, team := range f.Teams {
 		isAreaBy[team.ID] = make([][]bool, f.Height)
-		for yy := 0; yy < f.Height; yy ++ {
-			isAreaBy[team.ID][yy] = make([]bool, f.Width)
-			for xx := 0; xx < f.Width; xx ++ {
-				isAreaBy[team.ID][yy][xx] = false
-			}
+		for y := 0; y < f.Height; y ++ {
+			isAreaBy[team.ID][y] = make([]bool, f.Width)
 		}
-		if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
+		seen, ok := f.CheckAreaByDFS(team.ID, startX, startY);
+		if ok {
+			// team.IDによって(x, y)は囲われている！
+			for y := 0; y < f.Height; y ++ {
+				for x := 0; x < f.Width; x ++ {
+					isAreaBy[team.ID][y][x] = seen[y][x]
+				}
+			}
 			surroundedBy = append(surroundedBy, team.ID)
 		}
 	}
