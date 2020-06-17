@@ -251,12 +251,12 @@ func (f *Field) GiveNewStack(selectedAgentsIndex [][][]int) *stack.Stack {
 	return stk
 }
 
-// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApply に保存します
+// DetermineIfApplied は 行動情報が競合か許容か不正かを判定して isApplicable に保存します
 func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.UpdateAction, selectedAgentsIndex [][][]int) []int {
-	// isApply を初期化
-	isApply := make([]int, len(updateActions))
-	for i := range isApply {
-		isApply[i] = 1
+	// isApplicable を初期化
+	isApplicable := make([]int, len(updateActions))
+	for i := range isApplicable {
+		isApplicable[i] = 1
 	}
 
 	// 競合しているセルと、そのセルを選んでいるエージェントがいるセルには行けません
@@ -266,17 +266,17 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 	// 不正行動は先にはじいておく
 	for i := range isValid {
 		if isValid[i] == false {
-			isApply[i] = -1
+			isApplicable[i] = -1
 		}
 	}
 
 	// stackから出したセルを行動先に選んでいるセル
 	for stk.Len() != 0 {
 		updateActionIndex := stk.Pop().(int)
-		if isApply[updateActionIndex] == -1 {
+		if isApplicable[updateActionIndex] == -1 {
 			fmt.Printf("yabeeeeeeee\n")
 		}
-		isApply[updateActionIndex] = 0
+		isApplicable[updateActionIndex] = 0
 		if updateActions[updateActionIndex].Type != "put" {
 			x := f.Agents[updateActions[updateActionIndex].AgentID].X
 			y := f.Agents[updateActions[updateActionIndex].AgentID].Y
@@ -286,16 +286,16 @@ func (f *Field) DetermineIfApplied(isValid []bool, updateActions []*apispec.Upda
 		}
 	}
 
-	return isApply
+	return isApplicable
 }
 
 // ConvertIntoHistory は エージェント1体の行動情報を行動履歴に変換します
-func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, isApply int) AgentActionHistory {
+func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAction, isApplicable int) AgentActionHistory {
 	agentActionHistory := AgentActionHistory{
 		AgentID: updateAction.AgentID,
 		Type:    updateAction.Type,
 		Turn:    f.Turn + 1,
-		Apply:   isApply,
+		Apply:   isApplicable,
 	}
 	if updateAction.Type == "put" {
 		agentActionHistory.X = updateAction.X
@@ -604,13 +604,13 @@ func (f *Field) ActAgents(isValid []bool, updateActions []*apispec.UpdateAction,
 
 	// DistinationCount と IsValid に基づいて apply が決定
 	// i番目のupdateActionが許容か競合か不正か
-	isApply := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
+	isApplicable := f.DetermineIfApplied(isValid, updateActions, selectedAgentsIndex)
 	// []AgentActionHistoryつくる
 	agentActionHistories := make([]AgentActionHistory, len(updateActions))
 	// 各updateActionに対して
 	for i, updateAction := range updateActions {
 		// updateaction -> []AgentActionHistry に変換して代入
-		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApply[i])
+		agentActionHistories[i] = f.ConvertIntoHistory(isValid[i], updateAction, isApplicable[i])
 		// apply == 1 なら実際に動かす
 		if agentActionHistories[i].Apply == 1 {
 			f.ActuallyActAgent(updateAction2s[i])
