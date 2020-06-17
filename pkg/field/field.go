@@ -523,8 +523,13 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 	}
 }
 
-// SurroundedByWoHenkou は色々変更してるらしいです
-func (f *Field) SurroundedByWoHenkou(x int, y int, SurroundedBy []int, isAreaBy map[int][][]bool) {
+// SurroundedByWoHenkou はセル(x, y)を囲っているチームIDと、実際にどこのセルが囲まれているかを記録して返します
+func (f *Field) SurroundedByWoHenkou(x int, y int) ([]int, map[int][][]bool) {
+	// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
+	isAreaBy := map[int][][]bool{}
+	// (x, y) を囲んでいる城壁のteamIDのスライス
+	surroundedBy := []int{}
+
 	for _, team := range f.Teams {
 		isAreaBy[team.ID] = make([][]bool, f.Height)
 		for yy := 0; yy < f.Height; yy ++ {
@@ -534,9 +539,11 @@ func (f *Field) SurroundedByWoHenkou(x int, y int, SurroundedBy []int, isAreaBy 
 			}
 		}
 		if f.CheckAreaByDFS(team.ID, x, y, &isAreaBy) == true {
-			SurroundedBy = append(SurroundedBy, team.ID)
+			surroundedBy = append(surroundedBy, team.ID)
 		}
 	}
+
+	return surroundedBy, isAreaBy
 }
 
 // CleanUpCellsFormerlyWall は以前は壁だった細胞を片付けます
@@ -556,11 +563,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 				continue
 			}
 			// 各チームの城壁で囲まれているかチェック
-			// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
-			isAreaBy := map[int][][]bool{}
-			// (x, y) を囲んでいる城壁のteamIDのスライス
-			SurroundedBy := []int{}
-			f.SurroundedByWoHenkou(x, y, SurroundedBy, isAreaBy)
+			surroundedBy, isAreaBy := f.SurroundedByWoHenkou(x, y)
 
 			var teamID int
 
@@ -568,16 +571,16 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			// 1チームにしか囲われていないのならそのチームの陣地である。
 			// 2チームともに囲まれているのなら片方の領域内で囲めるかどうかで決める。
 
-			switch len(SurroundedBy) {
+			switch len(surroundedBy) {
 			case 0:
 				teamID = 0
 			case 1:
-				teamID = SurroundedBy[0]
+				teamID = surroundedBy[0]
 			case 2:
-				if f.FinalCheckByDFS(SurroundedBy[0], x, y, isAreaBy[SurroundedBy[1]]) == true {
-					teamID = SurroundedBy[0]
+				if f.FinalCheckByDFS(surroundedBy[0], x, y, isAreaBy[surroundedBy[1]]) == true {
+					teamID = surroundedBy[0]
 				} else {
-					teamID = SurroundedBy[1]
+					teamID = surroundedBy[1]
 				}
 			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
