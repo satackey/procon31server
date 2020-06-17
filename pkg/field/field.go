@@ -440,7 +440,7 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int, isAreaBy *map
 		}
 	}
 
-	if outsideFlag == true {
+	if outsideFlag {
 		return false
 	}
 	for y := 0; y < f.Height; y ++ {
@@ -470,10 +470,10 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if  f.IsOutsideField(x + dx[i], y + dy[i]) == true || isArea[y+dy[i]][x+dx[i]] == false {
+			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isArea[y+dy[i]][x+dx[i]]  {
 				return false
 			}
-			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) == true {
+			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
 				continue;
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
