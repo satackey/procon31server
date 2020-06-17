@@ -1,0 +1,22 @@
+name: Test
+
+on: [ push ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: docker-compose pull
+    - uses: satackey/action-docker-layer-caching@v0.0
+    - run: docker-compose build
+    - run: docker-compose up -d
+    - run: sleep 10s
+    - run: docker-compose run procon31server go test -v -race -cover -coverprofile=coverage.out ./...
+
+    - run: docker-compose logs
+      if: always()
+
+    - name: Upload coverage to Codecov
+      if: always()
+      run: bash <(curl -s https://codecov.io/bash)

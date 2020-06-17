@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	// "strings"
 	"time"
 
 	// MySQLを使うため
@@ -38,9 +38,9 @@ type joinedMatch struct {
 // GameMaster は
 type GameMaster struct {
 	Matches map[int]*Match
-	Teams   map[string]*Team
+	// Teams   map[string]*Team
 	// LocalTeamIDs map[int]int
-	GlobalTeamIDsByLocalTeamID map[int]string
+	// GlobalTeamIDsByLocalTeamID map[int]string
 	DB                         *sql.DB
 }
 
@@ -297,13 +297,6 @@ func (g *GameMaster) PostAgentActions(localTeamID int, UpdateActions []*apispec.
 
 // RegisterTeam は チームを登録します
 func (g *GameMaster) RegisterTeam(globalTeamID string, name string) error {
-	_, exists := g.Teams[globalTeamID]
-	if exists {
-		return errors.New(strings.Join([]string{"globalTeamID: ", globalTeamID, "はすでに登録されています"}, ""))
-		// エラー
-	}
-	// 同じチームIDを登録しようとしていたらエラー
-
 	sql := fmt.Sprintf("INSERT INTO `teams` (`global_id`, `name`) VALUES ('%s', '%s')", globalTeamID, name)
 	_, err := g.DB.Query(sql)
 	if err != nil {
