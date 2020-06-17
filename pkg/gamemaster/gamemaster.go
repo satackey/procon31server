@@ -208,8 +208,24 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
 func (m *Match) StartAutoTurnUpdate() {
+	// sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
+	// matches, err := m.DB.Query(sql)
+	// if err != nil {
+	// 	return 0, fmt.Errorf("取得に失敗しました: %w", err)
+	// }
+	// var StartsAt, TurnMillis, IntervalMillis int
+	// 	for matches.Next() {
+	// 	if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+	// 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
+	// 	}
+	// }
+	// startsAtMillis := int64(StartsAt) * 1000
+	// n64 := int64(n)
+	// // timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
 	go func() {
+		// 今何ターン目かを調べる関数がほしい
+		startsAtMillis + int64(TurnMillis)*n64
 		sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1)
 		if err != nil {
 			fmt.Println("error:%w", err)
@@ -218,6 +234,10 @@ func (m *Match) StartAutoTurnUpdate() {
 		// 時間を計算する関数を呼び出す
 		// endtime秒後に
 	}()
+}
+
+func (m *Match) searchNowTurn() {
+	
 }
 
 // UpdateTurn は 盤面を更新する
