@@ -529,11 +529,7 @@ func (f *Field) SurroundedByWoHenkou(startX int, startY int) ([]int, map[int][][
 		seen, ok := f.CheckAreaByDFS(team.ID, startX, startY);
 		if ok {
 			// team.IDによって(x, y)は囲われている！
-			for y := 0; y < f.Height; y ++ {
-				for x := 0; x < f.Width; x ++ {
-					isAreaBy[team.ID][y][x] = seen[y][x]
-				}
-			}
+			isAreaBy[team.ID] = seen
 			surroundedBy = append(surroundedBy, team.ID)
 		}
 	}

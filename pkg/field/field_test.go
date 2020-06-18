@@ -488,27 +488,12 @@ func TestFinalCheckByDFS(t *testing.T) {
 
 	y := []int{6, 9, 7}
 	x := []int{2, 5, 7}
-	expected := []bool{false, false, true}
+	expected := []int{3, 3, 4}
 
 	for i := 0; i < 3; i ++ {
-		isAreaBy := map[int][][]bool{
-			3: {},
-			4: {},
-		}
-		for teamID := range isAreaBy {
-			isAreaBy[teamID] = make([][]bool, f.Height)
-			for y := range isAreaBy[teamID] {
-				isAreaBy[teamID][y] = make([]bool, f.Width)
-			}
-		}
-		if f.CheckAreaByDFS(3, x[i], y[i], &isAreaBy) != true {
-			t.Fatalf("\ni: %d\n3 error\n", i)
-		}
-		if f.CheckAreaByDFS(4, x[i], y[i], &isAreaBy) != true {
-			t.Fatalf("\ni: %d\n4 error\n", i)
-		}
-		if f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]) != expected[i] {
-			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(3, x[i], y[i], isAreaBy[4]), expected[i])
+		surroundedBy, isAreaBy := f.SurroundedByWoHenkou(x[i], y[i])
+		if f.FinalCheckByDFS(surroundedBy, x[i], y[i], isAreaBy) != expected[i] {
+			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(surroundedBy, x[i], y[i], isAreaBy), expected[i])
 		}
 	}
 
@@ -532,24 +517,18 @@ func TestCheckAreaByDFS(t *testing.T) {
 	}
 
 	x, y := 7, 7
+	result := make(map[int][][]bool)
 
-	result := map[int][][]bool{
-		3: {},
-		4: {},
-	}
-	for teamID := range result {
-		result[teamID] = make([][]bool, f.Height)
-		for y := range result[teamID] {
-			result[teamID][y] = make([]bool, f.Width)
-		}
-	}
-
-	if f.CheckAreaByDFS(3, x, y, &result) != true {
+	seen3, ok3 := f.CheckAreaByDFS(3, x, y)
+	if !ok3 {
 		t.Fatalf("\n3 error\n")
 	}
-	if f.CheckAreaByDFS(4, x, y, &result) != true {
+	result[3] = seen3
+	seen4, ok4 := f.CheckAreaByDFS(4, x, y)
+	if !ok4 {
 		t.Fatalf("\n4 error\n")
 	}
+	result[4] = seen4
 
 	expected := map[int][][]bool{}
 	expected[3] = [][]bool{
