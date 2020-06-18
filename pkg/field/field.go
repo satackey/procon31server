@@ -144,7 +144,7 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 			if cell.TiledBy == teamID {
 				//タイルが自陣か否か
 			} else {
-				if seen[y][x] == true {
+				if seen[y][x] {
 					// ここに入ったらDFSはしない、みたことある
 					continue
 				}
@@ -175,8 +175,8 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 							continue
 						}
 
-						// seen[x+dx][y+dy] == true なら既にみているからcontinue
-						if seen[x+dx[index]][y+dy[index]] == true {
+						// seen[x+dx][y+dy] が true なら既にみているからcontinue
+						if seen[x+dx[index]][y+dy[index]] {
 							continue
 						}
 
@@ -189,7 +189,7 @@ func (f *Field) CalcAreaPoint(teamID int) int {
 				}
 			}
 			// SumKari の値が確定！！
-			if IsAreaPoint == true {
+			if IsAreaPoint {
 				Sum += SumKari
 			}
 
@@ -219,7 +219,7 @@ func (f *Field) RecordCellSelectedAgents(isValid []bool, updateActions []*apispe
 	}
 
 	for i, updateAction := range updateActions {
-		if isValid[i] == true {
+		if isValid[i] {
 			var x, y int
 			if updateActions[i].Type == "put" {
 				x = updateAction.X
@@ -400,7 +400,7 @@ func (f *Field) IsWallByteamIDOrSeen(x int, y int, teamID int, seen [][]bool) bo
 	if f.Cells[y][x].Status == "wall" && f.Cells[y][x].TiledBy == teamID {
 		return true
 	}
-	if seen[y][x] == true {
+	if seen[y][x] {
 		return true
 	}
 	return false
@@ -425,10 +425,10 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bo
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) == true {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) {
 				return nil, false
 			}
-			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) == true {
+			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
 				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
@@ -438,8 +438,10 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bo
 	return seen, true
 }
 
-// FinalCheckByDFS はSurroundedBy[1]の中で、SurroundedBy[0]で囲めるならtrueを返します
-func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]bool) bool {
+// FinalCheckByDFS はSurroundedBy[1]で囲まれた中でSurroundedBy[0]によって囲めるか？をDFSで判定し、
+// (x, y)をより内側で囲っているteamのIDを返します
+func (f *Field) FinalCheckByDFS(surroundedBy []int, startX int, startY int, isAreaBy map[int][][]bool) int {
+	teamID := surroundedBy[0]
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
 	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 	seen := make([][]bool, f.Height)
@@ -457,18 +459,20 @@ func (f *Field) FinalCheckByDFS(teamID int, startX int, startY int, isArea [][]b
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isArea[y+dy[i]][x+dx[i]]  {
-				return false
+			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[surroundedBy[0]][y+dy[i]][x+dx[i]]  {
+				// [1]の内側に[0]があるならこの条件を満たさないﾊｽﾞ。
+				// が、満たしたのだから、仮定が偽
+				return surroundedBy[1]
 			}
 			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
-				continue;
+				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
 			seen[y+dy[i]][x+dx[i]] = true
 		}
 	}
 
-	return true
+	return surroundedBy[0]
 }
 
 // IsWallOrSeen は壁の中、もしくは既に見ているマスならtrueを返します
@@ -476,7 +480,7 @@ func (f *Field) IsWallOrSeen(x int, y int, seen [][]bool) bool {
 	if f.Cells[y][x].Status == "wall" {
 		return true
 	}
-	if seen[y][x] == true {
+	if seen[y][x] {
 		return true
 	}
 	return false
@@ -501,7 +505,7 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 		}
 		
 		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) == true || f.IsWallOrSeen(x+dx[i], y+dy[i], *seen) == true {
+			if f.IsOutsideField(x + dx[i], y + dy[i]) || f.IsWallOrSeen(x+dx[i], y+dy[i], *seen) {
 				continue
 			}
 			st.Push([]int{x+dx[i], y+dy[i]})
@@ -550,7 +554,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 
 	for y := range seen {
 		for x := range seen[y] {
-			if f.IsWallOrSeen(x, y, seen) == true {
+			if f.IsWallOrSeen(x, y, seen) {
 				continue
 			}
 			// 各チームの城壁で囲まれているかチェック
@@ -568,11 +572,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			case 1:
 				teamID = surroundedBy[0]
 			case 2:
-				if f.FinalCheckByDFS(surroundedBy[0], x, y, isAreaBy[surroundedBy[1]]) == true {
-					teamID = surroundedBy[0]
-				} else {
-					teamID = surroundedBy[1]
-				}
+				teamID = f.FinalCheckByDFS(surroundedBy, x, y, isAreaBy)
 			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
 			f.ChangeCellToPositionByDFS(teamID, x, y, &seen)
