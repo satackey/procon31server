@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	// "strings"
 	"time"
 
@@ -41,7 +42,7 @@ type GameMaster struct {
 	// Teams   map[string]*Team
 	// LocalTeamIDs map[int]int
 	// GlobalTeamIDsByLocalTeamID map[int]string
-	DB                         *sql.DB
+	DB *sql.DB
 }
 
 // GetMatch は
@@ -179,10 +180,8 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 }
 
 // GetRemainingMSecToTheTransitionOnTurn は nターン終了時までの時間を計算する関数
-func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
-	// m.ID
-	now := time.Now()
-	nowMillis := now.UnixNano() / int64(time.Millisecond)
+func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (int, error) {
+	nowMillis := atTime.Unix() * 1000
 
 	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
 	matches, err := m.DB.Query(sql)
@@ -202,7 +201,6 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int) (int, error) {
 	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
 	endtime := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1)) - nowMillis
-	// 求めたいもの = (m.StartsAt /* s */ + m.TurnMillis /* ms */) - いま /* s */
 	return int(endtime), nil
 }
 
@@ -236,8 +234,38 @@ func (m *Match) StartAutoTurnUpdate() {
 	}()
 }
 
-func (m *Match) searchNowTurn() {
-	
+// 今のターンを調べる関数
+func (m *Match) GetTurn(n int, atTime time.Time) (int, error) {
+	nowMillis := atTime.Unix() * 1000
+
+	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
+	matches, err := m.DB.Query(sql)
+	if err != nil {
+		return 0, fmt.Errorf("取得に失敗しました: %w", err)
+	}
+
+	var StartsAt, TurnMillis, IntervalMillis int
+	for matches.Next() {
+		if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+			return 0, fmt.Errorf("取得に失敗しました: %w", err)
+		}
+	}
+
+	startsAtMillis := int64(StartsAt) * 1000
+	n64 := int64(n)
+	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
+
+	// hoge := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1))
+	// startat turmms1 intervalms1 turnms2 intevalms2
+	// 今-(s+1)
+	// 今-(s+1)-2
+	var hoge int
+	var turn int
+	for turn = 1; hoge > 0; turn++ {
+		hoge = int(nowMillis - startsAtMillis) + TurnMillis*n + IntervalMillis*(n-1))
+	}
+
+	return turn, nil
 }
 
 // UpdateTurn は 盤面を更新する

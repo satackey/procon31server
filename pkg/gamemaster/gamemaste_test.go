@@ -231,12 +231,16 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 		t.Fatalf("失敗: %s", err)
 		return
 	}
-	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(2)
+
+	// startatが1599066568
+	atTime := time.Unix(1599066568, 0)
+	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(2, atTime)
 	if err != nil {
 		t.Fatalf("計算失敗: %s", err)
 		return
 	}
-	t.Log(sum)
+	t.Log(sum / 1000)
+	// endtimeはミリ秒だから1000で割ってみる
 	// 結果は要検証
 	// この方法を使うときは -v オプションを付けないと出力されないぞ
 	return
