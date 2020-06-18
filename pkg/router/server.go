@@ -3,13 +3,10 @@
 package main
 
 import (
-	// "fmt"
 	"log"
 	"net/http"
 
-	// "encoding/json"
 	"github.com/ant0ine/go-json-rest/rest"
-	// "../apisec/apisec.go"
 	"github.com/satackey/procon31server/pkg/apispec"
 
 	"sync"
@@ -17,30 +14,15 @@ import (
 
 func main() {
 
-	// var a apisec.Match
-
 	log.Println("localhost:3000 でサーバを起動しました")
 	api := rest.NewApi()
 
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
 		rest.Get("/ping", PingsThings),
-
 		rest.Get("/matches", GetAllMatch),
-
-		// 実際には降ってくるけど, 練習環境ではそれがないのでpostを用意しておく
-		// rest.Post("mathces", PostMatch),
-		// PathExp must start with /
-		rest.Post("/matches", PostMatch),
-
-		// CRUDのC Post or Put
 		rest.Get("/matches/:id", GetUpdateAction),
-		// rest.Delete("/matches/:id", DeleteMatch),
-		rest.Post("/matches/:id/advanceaction", PostAction),
-		// rest.Get("/matches/:id/action"),
-		rest.Post("/matches/:id/action", PostUpdate),
-		// // rest.Post("/matches/:id/action", NewPostUpdate),
-		// rest.Post("/matchesnew/:id", GetFieldStatus),
+		rest.Post("/matches/:id/action", PostAction),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -62,67 +44,7 @@ func PingsThings(w rest.ResponseWriter, r *rest.Request) {
 
 }
 
-// こういう構造体をapisec.goから引っ張ってきたい
-// type Status struct {
-//     Id int `json:id`
-// }
-
-// type Match struct {
-// 	Id             int    `json:"id"`             // 試合のid
-// 	IntervalMillis int    `json:"intervalMillis"` // ターンとターンの間の時間
-// 	MatchTo        string `json:"matchTo"`        // 対戦相手の名前
-// 	TeamID         int    `json:"teamID"`         // 自分のteamid
-// 	TurnMillis     int    `json:"turnMillis"`     // 1ターンの(制限?)時間
-// 	Turns          int    `json:"turns"`          // 試合のターン数
-// }
-
-// var store = map[int]*Match{}
-
 var lock = sync.RWMutex{}
-
-func PostMatch(w rest.ResponseWriter, r *rest.Request) {
-	// country := new(Country)
-	matchstruct := apispec.Match{}
-	// fmt.Print(country) { }が入ってた 初期化されている
-
-	// リクエストを読み取り, json.UnmarshalでJSONをデコードしてる
-	// &countryはJSONが入っている
-	err := r.DecodeJsonPayload(&matchstruct)
-	if err != nil {
-		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
-		return
-	}
-	if matchstruct.ID == 0 {
-		rest.Error(w, "country id required", 400)
-		return
-	}
-	if matchstruct.IntervalMillis == 0 {
-		rest.Error(w, "country intervalmills ないぞ", 400)
-		return
-	}
-	if matchstruct.MatchTo == "" {
-		rest.Error(w, "Matchto required", 400)
-		return
-	}
-	if matchstruct.TeamID == 0 {
-		rest.Error(w, "teamid required", 400)
-		return
-	}
-	if matchstruct.TurnMillis == 0 {
-		rest.Error(w, "turnmillis required", 400)
-		return
-	}
-	if matchstruct.Turns == 0 {
-		rest.Error(w, "turns required", 400)
-		return
-	}
-	// lock.Lock()
-	// store[matchstruct.Id] = &matchstruct
-	// lock.Unlock()
-	// w.WriteJson(&matchstruct)
-	MyResponse(w, "OK", 202)
-	return
-}
 
 // https://github.com/ant0ine/go-json-rest/blob/ebb33769ae013bd5f518a8bac348c310dea768b8/rest/response.go
 
@@ -165,56 +87,44 @@ type TwoResponse struct {
 	Status   string `json:"status"`
 }
 
-// func JsonResponse(w rest.ResponseWriter, r *rest.Request) {
-// 	response := TwoResponse{startAtUnixTime, "InvalidMatches"}
-
-// 	res, err := r.DecodeJsonPayload(response)
-
-// 	// if err != nil {
-// 	// 	rest.Error(w, err.Error(), rest.)
-// 	// }
-
-// 	Header().Set("Content-Type", "application/json")
-// 	w.write(res)
-// }
-
 func GetAllMatch(w rest.ResponseWriter, r *rest.Request) {
 	lock.RLock()
-	// manymatches := make([]Match, len(store)) // mapを初期化してる storeの数だけ場所を確保している
-	// i := 0
-	// for _, matchstruct := range store {
-	// 	manymatches[i] = *matchstruct
-	// 	i++
-	// }
-	// x := unsafe.Sizeof(manymatches)
-	// fmt.Println(x)
+	allmatch := apispec.Match{}
+	allmatch.Turns = 9999
 
-	// lock.RUnlock() // ここに書かないとpostができない
-	// // X := make([]int, 5, 5)
-	// // 全部24じゃん
-	// // fmt.Println(unsafe.Sizeof(X))
-	// // fmt.Println(unsafe.Sizeof(manymatches))
-	// fmt.Println(len(store)) // 0??????
-	// fmt.Println("len:", len(manymatches))
-	// // zero := len(manymatches)
-	// if len(manymatches) == 0 {
-	// 	MyResponse(w, "値一個もないぞ〜〜〜", 401)
-	// 	return
-	// }
+	if allmatch.ID == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if allmatch.IntervalMillis == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if allmatch.MatchTo == "" {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if allmatch.TeamID == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if allmatch.TurnMillis == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if allmatch.Turns == 9999 {
+		rest.Error(w, "id required", 400)
+		return
+	}
 
-	// fmt.Printf("%T %T", manymatches, &manymatches)
-
-	// w.WriteJson(&manymatches)
 	MyResponse(w, "OK", 202)
 	return
 }
 
-// このpostをmatches:id に反映させる? させた(/actionの使い方があっているか確認) 違う
 func PostAction(w rest.ResponseWriter, r *rest.Request) {
 
-	// actionstruct := UpdateAction{}
 	matchstruct := apispec.Match{}
-
+	matchstruct.Turns = 9999
 	err := r.DecodeJsonPayload(&matchstruct)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
@@ -226,11 +136,11 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 	if matchstruct.ID == 0 {
-		rest.Error(w, "country id required", 400)
+		rest.Error(w, "id required", 400)
 		return
 	}
 	if matchstruct.IntervalMillis == 0 {
-		rest.Error(w, "country intervalmills ないぞ", 400)
+		rest.Error(w, "intervalmills ないぞ", 400)
 		return
 	}
 	if matchstruct.MatchTo == "" {
@@ -245,7 +155,7 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 		rest.Error(w, "turnmillis required", 400)
 		return
 	}
-	if matchstruct.Turns == 0 {
+	if matchstruct.Turns == 9999 {
 		rest.Error(w, "turns required", 400)
 		return
 	}
@@ -257,142 +167,81 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 	return
 }
 
-// type UpdateAction struct {
-// 	AgentID int    `json:"agentID"`
-// 	DX      int    `json:"dx"`
-// 	DY      int    `json:"dy"`
-// 	Type    string `json:"type"`
-// 	Turn    int    `json:"turn"`
-// 	// Array   []Agent `json:"agents"`
-// }
-
-// TODO:変数名をちゃんと考える
-// var store_2 = map[int]*UpdateAction{}
-
-func PostUpdate(w rest.ResponseWriter, r *rest.Request) {
-
-	// id_val := r.PathParam("id")
-	// // code はstr型
-	// var id int
-	// id, _ = strconv.Atoi(id_val)
-
-	NewActionStruct := apispec.UpdateAction{}
-
-	// turnが変更されないか監視するための変数(decodeされる前なのでpostされる値はまだ入っていない(に等しい))
-	// NewActionStruct.Turn = 5
-	// CheckTurnVal := NewActionStruct.Turn
-	// fmt.Println(CheckTurnVal)
-	err := r.DecodeJsonPayload(&NewActionStruct)
-	if err != nil {
-		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
-		return
-	}
-
-	if err != nil {
-		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
-		return
-	}
-	if NewActionStruct.AgentID == 0 {
-		rest.Error(w, "agent id required", 400)
-		return
-	}
-	if NewActionStruct.DX == 0 {
-		rest.Error(w, "dx ないぞ", 400)
-		return
-	}
-	// TODO
-	if NewActionStruct.DX >= 3 {
-		// rest.Error(w, "dx そんなに動けん ", 400)
-		DoubleResponse(w, "InvalidMatches", 0, 400)
-		// response := TwoResponse{0, "InvalidMatches"}
-		return
-	}
-
-	if NewActionStruct.DY == 0 {
-		rest.Error(w, "dy required", 400)
-		return
-	}
-	if NewActionStruct.DY >= 3 {
-		rest.Error(w, "dy そんなに動けん", 400)
-		return
-	}
-	if NewActionStruct.Type == "" {
-		rest.Error(w, "type required", 400)
-		return
-	}
-
-	// turnが書き換えられていないか確認している
-	// if CheckTurnVal != NewActionStruct.Turn {
-	// 	NewActionStruct.Turn = CheckTurnVal
-	// }
-
-	// lock.Lock()
-	// FieldStatusActionStruct := FieldStatusAction{}
-	// デコードした値を別の構造体型mapに代入しなきゃいけない
-	// 別の型に代入する方法(ActionStoreにNewActionStructのアドレスを代入)を調べるか左辺を細かく指定する(値を一個ずつ ActionStoreのn番目のidというkeyに NewActionStruct.Idを代入みたいな)方法を調べる
-	// matchstruct := Match{}
-
-	// store_2[id] = &NewActionStruct
-	// lock.Unlock()
-	// w.WriteJson(&NewActionStruct)
-	MyResponse(w, "OK", 202)
-	return
-}
-
-// type FieldStatusAction struct {
-// 	AgentID int    `json:"agentID"`
-// 	DX      int    `json:"dx"`
-// 	DY      int    `json:"dy"`
-// 	Type    string `json:"type"`
-// 	Apply   int    `json:"apply"`
-// 	Turn    int    `json:"turn"`
-// }
-
 var ActionStore = map[int]*apispec.FieldStatusAction{}
 
 // Matchのidを判別しつつUpdateActionをGetする
 func GetUpdateAction(w rest.ResponseWriter, r *rest.Request) {
-	// id_val := r.PathParam("id")
-	// // code はstr型
-	// var id int
-	// id, _ = strconv.Atoi(id_val)
-	// fmt.Println(id) // urlのパラメータ
 
-	// lock.RLock()
+	// TODO ここちょっと怪しい(値自体を読み込めていない気がする)
+	NewAction := apispec.FieldStatus{}
+	NewAction.StartedAtUnixtime = 9999
+	// NewAction.Turn
 
-	// var updateactionstruct *UpdateAction
-	// var otherstruct *Y
-	// newaction := UpdateAction{}
-	// agentid := store_2.agentID
+	if NewAction.Width == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if NewAction.Height == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if len(NewAction.Points) == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if NewAction.StartedAtUnixtime == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if NewAction.Turn == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if len(NewAction.Cells) == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if len(NewAction.Teams) == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if len(NewAction.Actions) == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
 
-	// if store_2[id] != nil {
-	// 	// 右辺でアドレスを指定することで型を流し込んでいる
-	// 	// matchstruct = &Match{}
-	// 	updateactionstruct = &UpdateAction{}
+	// Teamの中身の確認
+	// TODO ここもちょっと怪しい
+	TeamStatus := apispec.Team{}
 
-	// 	// otherstruct = &Y{}
-	// 	// store[id]に格納されている値をpointerで呼び出して代入
-	// 	// *matchstruct = *store[id]
-	// 	*updateactionstruct = *store_2[id]
-	// 	// *otherstruct = *store_2[id]
+	if TeamStatus.TeamID == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if len(TeamStatus.Agents) == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	// tilepointは存在してた
+	// TODO tilepointかcellpoint どちらかに統一
+	if TeamStatus.TilePoint == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
+	if TeamStatus.AreaPoint == 0 {
+		rest.Error(w, "id required", 400)
+		return
+	}
 
-	// 	// fmt.Println(*country)
-	// 	// fmt.Println("x")
-	// }
-
-	// updateactionstruct
-
-	// lock.RUnlock()
-	// if country == nil { // ここの左辺がなぜstore[code]じゃだめかわからない 動いたからヨシはだめなので後で考える
-
-	// if store[id] == nil {
-
-	// 	rest.NotFound(w, r)
-	// 	return
-	// }
-	// w.WriteJson(updateactionstruct)
 	MyResponse(w, "OK", 202)
 	return
 }
 
-// }
+// 初期値が0じゃだめな変数
+// startAtUnixTime
+// turn
+// areapoint
+
+// turnとturnsの違い
+// startAtUnixTimeとstartedAtUnixTimeの違い
+// どちらも0が代入される可能性があるかどうか
