@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/satackey/procon31server/pkg/apispec"
@@ -80,32 +81,24 @@ func (f *Field) InitField(fieldStatus *apispec.FieldStatus) {
 			}
 		}
 	}
-
 }
 
 // CalcPoint は現在のフィールドの指定されたチームIDの得点を計算します
+// かならず ActAgents() を実行後に実行すること
 func (f *Field) CalcPoint(teamID int) int {
-	return f.CalcWallPoint(teamID) + f.CalcAreaPoint(teamID)
-}
-
-// CalcWallPoint は現在のフィールドの指定されたチームIDの城壁の点数を計算します
-func (f *Field) CalcWallPoint(teamID int) int {
 	sum := 0
-	for _ /*y*/, fieldRow := range f.Cells {
-		for _ /*x*/, cell := range fieldRow {
-			if cell.TiledBy == teamID {
-				sum += cell.Point
+	for y := range f.Cells {
+		for x := range f.Cells[y] {
+			if f.Cells[y][x].TiledBy == teamID {
+				if f.Cells[y][x].Status == "wall" {
+					sum += f.Cells[y][x].Point
+				} else if f.Cells[y][x].Status == "position" {
+					sum += int(math.Abs(float64(f.Cells[y][x].Point)))
+				}
 			}
 		}
 	}
 	return sum
-}
-
-// CalcAreaPoint は 現在のフィールドの指定されたチームIDの城壁の点数を計算します
-func (f *Field) CalcAreaPoint(teamID int) int {
-	Sum := 0
-
-	return Sum
 }
 
 // MakeUpdateAction2s は updateActions と updateActionIDs をまとめて返します
