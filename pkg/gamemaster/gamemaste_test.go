@@ -148,12 +148,18 @@ func TestTeamExistsNasi(t *testing.T) {
 }
 
 func TestCreareMatch(t *testing.T) {
-	createMatch(t)
+	createMatchFailsIfErr(t, time.Now())
+
+	startsAt := time.Now().Add(time.Duration(-1) * time.Minute)
+	_, err := createMatchReturnWithErr(t, startsAt)
+	if err.Error() != "startsAtが今の時刻より前です" {
+		t.Fatal(err)
+	}
 }
 
 var createdMatchIDs []int = []int{}
 
-func createMatch(tb testing.TB) int {
+func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
 	gm := createGameMasterInstanceConnectedDB(tb)
 
 	cell := apispec.Cell{
@@ -172,9 +178,20 @@ func createMatch(tb testing.TB) int {
 	}
 
 	globalid1, err := registerTeam(tb)
+	if err != nil {
+		return 0, err
+	}
 	globalid2, err := registerTeam(tb)
+	if err != nil {
+		return 0, err
+	}
 
-	matchID, err := gm.CreateMatch(&TestCase, 1599066568, 15000, 2000, 15, globalid1, globalid2)
+	startsAtSec := startsAt.UnixNano() / int64(time.Second)
+	return gm.CreateMatch(&TestCase, startsAtSec, 150000, 2000, 15, globalid1, globalid2)
+}
+
+func createMatchFailsIfErr(tb testing.TB, startsAt time.Time) int {
+	matchID, err := createMatchReturnWithErr(tb, startsAt)
 	if err != nil {
 		tb.Fatalf("マッチ登録 失敗: %s", err)
 		return 0
@@ -213,7 +230,7 @@ func deleteAllCreatedMatch() error {
 }
 
 func TestGetMatch(t *testing.T) {
-	matchID := createMatch(t)
+	matchID := createMatchFailsIfErr(t, time.Now())
 
 	_, err := GetMatch(matchID)
 	if err != nil {
@@ -224,7 +241,8 @@ func TestGetMatch(t *testing.T) {
 }
 
 func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
-	matchID := createMatch(t)
+	matchStartsAt := time.Now().Add(time.Duration(1) * time.Minute)
+	matchID := createMatchFailsIfErr(t, matchStartsAt)
 
 	m, err := GetMatch(matchID)
 	if err != nil {
@@ -232,16 +250,23 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 		return
 	}
 
-	// startatが1599066568
-	atTime := time.Unix(1599066568, 0)
-	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(2, atTime)
+	// startatが1599066568 = 2020-09-03 02:09:28
+
+	now := time.Now()
+	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1, now)
 	if err != nil {
 		t.Fatalf("計算失敗: %s", err)
 		return
 	}
-	t.Log(sum / 1000)
-	// endtimeはミリ秒だから1000で割ってみる
-	// 結果は要検証
+	// 結果が正しいのかチェック
+	// endtime := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1)) - nowMillis
+	// (1599066568 * 1000 + 15000 * 2 + 2000 * (2-1)) - 1599066568 * 1000 = 32000
+	expectedTime := matchStartsAt.Add(15 * time.Second).Sub(now)
+	expected := int64(expectedTime / time.Millisecond)
+	if int64(sum) != expected {
+		t.Log(sum, expected, expectedTime)
+		t.Fatalf("計算失敗: %s", err)
+	}
 	// この方法を使うときは -v オプションを付けないと出力されないぞ
 	return
 }
@@ -302,7 +327,7 @@ func TestPostAgentActions(t *testing.T) {
 }
 
 func TestUpdateTurn(t *testing.T) {
-	matchID := createMatch(t)
+	matchID := createMatchFailsIfErr(t, time.Now())
 
 	m, err := GetMatch(matchID)
 	if err != nil {

@@ -114,7 +114,7 @@ func GetTeam(id string) (*Team, error) {
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int64, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
 		return 0, errors.New("startsAtが今の時刻より前です")
@@ -181,8 +181,6 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int,
 
 // GetRemainingMSecToTheTransitionOnTurn は nターン終了時までの時間を計算する関数
 func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (int, error) {
-	nowMillis := atTime.Unix() * 1000
-
 	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
 	matches, err := m.DB.Query(sql)
 	if err != nil {
@@ -195,44 +193,44 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (
 			return 0, fmt.Errorf("取得に失敗しました: %w", err)
 		}
 	}
-
-	startsAtMillis := int64(StartsAt) * 1000
-	n64 := int64(n)
+	// StartsAt = time.Now().Add(time.Duration(1) * time.Minute)
+	turnSec := TurnMillis / 1000
+	intervalSec := IntervalMillis / 1000
 	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
-	endtime := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1)) - nowMillis
+	endtime := (StartsAt + turnSec*n + intervalSec*(n-1)) - int(atTime.Unix())
 	return int(endtime), nil
 }
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
-func (m *Match) StartAutoTurnUpdate() {
-	// sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
-	// matches, err := m.DB.Query(sql)
-	// if err != nil {
-	// 	return 0, fmt.Errorf("取得に失敗しました: %w", err)
-	// }
-	// var StartsAt, TurnMillis, IntervalMillis int
-	// 	for matches.Next() {
-	// 	if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
-	// 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
-	// 	}
-	// }
-	// startsAtMillis := int64(StartsAt) * 1000
-	// n64 := int64(n)
-	// // timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
+// func (m *Match) StartAutoTurnUpdate() {
+// 	// sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
+// 	// matches, err := m.DB.Query(sql)
+// 	// if err != nil {
+// 	// 	return 0, fmt.Errorf("取得に失敗しました: %w", err)
+// 	// }
+// 	// var StartsAt, TurnMillis, IntervalMillis int
+// 	// 	for matches.Next() {
+// 	// 	if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+// 	// 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
+// 	// 	}
+// 	// }
+// 	// startsAtMillis := int64(StartsAt) * 1000
+// 	// n64 := int64(n)
+// 	// // timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
-	go func() {
-		// 今何ターン目かを調べる関数がほしい
-		startsAtMillis + int64(TurnMillis)*n64
-		sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1)
-		if err != nil {
-			fmt.Println("error:%w", err)
-		}
-		time.Sleep(time.Duration(sum) * time.Millisecond)
-		// 時間を計算する関数を呼び出す
-		// endtime秒後に
-	}()
-}
+// 	go func() {
+// 		// 今何ターン目かを調べる関数がほしい
+// 		startsAtMillis + int64(TurnMillis)*n64
+// 		sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1)
+// 		if err != nil {
+// 			fmt.Println("error:%w", err)
+// 		}
+// 		time.Sleep(time.Duration(sum) * time.Millisecond)
+// 		// 時間を計算する関数を呼び出す
+// 		// endtime秒後に
+// 	}()
+// }
 
 // 今のターンを調べる関数
 func (m *Match) GetTurn(n int, atTime time.Time) (int, error) {
@@ -252,7 +250,6 @@ func (m *Match) GetTurn(n int, atTime time.Time) (int, error) {
 	}
 
 	startsAtMillis := int64(StartsAt) * 1000
-	n64 := int64(n)
 	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
 	// hoge := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1))
@@ -262,7 +259,7 @@ func (m *Match) GetTurn(n int, atTime time.Time) (int, error) {
 	var hoge int
 	var turn int
 	for turn = 1; hoge > 0; turn++ {
-		hoge = int(nowMillis - startsAtMillis) + TurnMillis*n + IntervalMillis*(n-1))
+		hoge = int(nowMillis-startsAtMillis) + TurnMillis*n + IntervalMillis*(n-1)
 	}
 
 	return turn, nil
