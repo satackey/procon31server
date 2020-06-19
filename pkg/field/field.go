@@ -454,12 +454,13 @@ func (f *Field) FinalCheckByDFS(surroundedBy []int, startX int, startY int, isAr
 
 	st := stack.New()
 	st.Push([]int{startX, startY})
+	seen[startY][startX] = true
 	for st.Len() != 0 {
 		xy := st.Pop().([]int)
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[surroundedBy[0]][y+dy[i]][x+dx[i]]  {
+			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[surroundedBy[1]][y+dy[i]][x+dx[i]]  {
 				// [1]の内側に[0]があるならこの条件を満たさないﾊｽﾞ。
 				// が、満たしたのだから、仮定が偽
 				return surroundedBy[1]
@@ -494,6 +495,7 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 
 	st := stack.New()
 	st.Push([]int{startX, startY})
+	(*seen)[startY][startX] = true
 	for st.Len() != 0 {
 		xy := st.Pop().([]int)
 		x := xy[0]

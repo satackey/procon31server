@@ -488,7 +488,7 @@ func TestFinalCheckByDFS(t *testing.T) {
 
 	y := []int{6, 9, 7}
 	x := []int{2, 5, 7}
-	expected := []int{3, 3, 4}
+	expected := []int{4, 4, 3}
 
 	for i := 0; i < 3; i ++ {
 		surroundedBy, isAreaBy := f.SurroundedByWoHenkou(x[i], y[i])
