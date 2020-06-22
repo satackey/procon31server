@@ -2,6 +2,7 @@ package gamemaster
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"testing"
@@ -259,11 +260,15 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 		return
 	}
 	// 結果が正しいのかチェック
-	// endtime := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1)) - nowMillis
-	// (1599066568 * 1000 + 15000 * 2 + 2000 * (2-1)) - 1599066568 * 1000 = 32000
-	expectedTime := matchStartsAt.Add(15 * time.Second).Sub(now)
-	expected := int64(expectedTime / time.Millisecond)
-	if int64(sum) != expected {
+
+	expectedTime := matchStartsAt.Add(150 * time.Second).Sub(now)
+	expected := int(expectedTime / time.Millisecond)
+	duration := sum*1000 - expected
+	duration = int(math.Abs(float64(duration)))
+
+	fmt.Printf("%d %d %d \n", sum, expected, duration)
+	if duration > 1000 {
+		// 誤差1000ms以上なら計算失敗
 		t.Log(sum, expected, expectedTime)
 		t.Fatalf("計算失敗: %s", err)
 	}

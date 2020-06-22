@@ -187,19 +187,21 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (
 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
 	}
 
-	var StartsAt, TurnMillis, IntervalMillis int
+	var StartsAt int64
+	var TurnMillis, IntervalMillis int
 	for matches.Next() {
 		if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
 			return 0, fmt.Errorf("取得に失敗しました: %w", err)
 		}
 	}
-	// StartsAt = time.Now().Add(time.Duration(1) * time.Minute)
 	turnSec := TurnMillis / 1000
 	intervalSec := IntervalMillis / 1000
+
 	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
 
-	endtime := (StartsAt + turnSec*n + intervalSec*(n-1)) - int(atTime.Unix())
-	return int(endtime), nil
+	endtime := int(StartsAt-atTime.Unix()) + turnSec*n + intervalSec*(n-1)
+	// endtime is sec
+	return endtime, nil
 }
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
