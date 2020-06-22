@@ -584,32 +584,44 @@ func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*apispec.UpdateAction) 
 func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.UpdateAction) (res []bool) {
 	res = make([]bool, len(updateActions))
 
-
 	for index, updateAction := range updateActions {
-		NextX := f.Agents[updateAction.AgentID].X + updateAction.DX
-		NextY := f.Agents[updateAction.AgentID].Y + updateAction.DY
-
 		// AgentIDが存在するか
-		// stay
-			// DX, DYの値は0か
-		// move
-			// DX, DYの値は正常か
-			// 移動先のマスは範囲外でないか
-			// 移動先は敵の城壁でないか
-		// remove
-			// DX, DYの値は正常か
-			// 移動先のマスは範囲外でないか
-			// 移動先は城壁か
-		// put
-			// X, Yの値は範囲外でないか
-			// 移動先は敵の城壁でないか
-			
-
 		if _, ok := f.Agents[updateAction.AgentID]; !ok {
-			// 指定された AgentID は存在しない　想定外　論外
+			// AgentIDは存在しなかった
 			res[index] = false
 			continue
-		} else if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
+		}
+		// 移動先の座標
+		nextX, nextY := f.CalcAgentDestination(updateAction)
+
+		if updateAction.Type == "stay" {
+			updateAction.DX = 0
+			updateAction.DY = 0
+			updateAction.X = 0
+			updateAction.Y = 0
+		} else if updateAction.Type == "move" {
+			updateAction.X = 0
+			updateAction.Y = 0
+			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
+			// 移動先のセルは範囲内か(NextX, NextY)
+			// 移動先は敵の城壁か(NextX, NextY, f.Agents[updateAction.AgentID].TeamID)
+			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
+				res[index] = false
+				continue
+			}
+		}
+		
+
+		// remove
+			// DX, DYの値は正常か
+			// 移動先のセルは範囲内か
+			// 移動先は城壁か(NextX, NextY)
+		// put
+			// 移動先のセルは範囲内か
+			// 移動先は敵の城壁か
+			
+		
+		if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
 			// DX の値が不正　瞬間移動はできない。
 			res[index] = false
 			continue
@@ -645,4 +657,25 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 		res[index] = true
 	}
 	return
+}
+
+// CalcAgentDestination は行動情報が指し示す移動先の座標を返します
+func (f *Field) CalcAgentDestination(updateAction *apispec.UpdateAction) (x int, y int) {
+	x = f.Agents[updateAction.AgentID].X + updateAction.DX
+	y = f.Agents[updateAction.AgentID].Y + updateAction.DY
+	if updateAction.Type == "put" {
+		x = updateAction.X
+		y = updateAction.Y
+	}
+	return
+}
+
+// IsDXDYValidValue はDXとDYが有効な値であるか判定します
+func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
+	if DX != -1 && DX != 0 && DX != 1 {
+		return false
+	}else if DY != -1 && DY != 0 && DY != 1 {
+		return false
+	}
+	return true
 }
