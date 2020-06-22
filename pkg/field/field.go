@@ -341,10 +341,10 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bo
 	return seen, true
 }
 
-// FinalCheckByDFS はSurroundedBy[1]で囲まれた中でSurroundedBy[0]によって囲めるか？をDFSで判定し、
+// FinalCheckByDFS はenclosedBy[1]で囲まれた中でenclosedBy[0]によって囲めるか？をDFSで判定し、
 // (x, y)をより内側で囲っているteamのIDを返します
-func (f *Field) FinalCheckByDFS(surroundedBy []int, startX int, startY int, isAreaBy map[int][][]bool) int {
-	teamID := surroundedBy[0]
+func (f *Field) FinalCheckByDFS(enclosedBy []int, startX int, startY int, isAreaBy map[int][][]bool) int {
+	teamID := enclosedBy[0]
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
 	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 	seen := make([][]bool, f.Height)
@@ -363,10 +363,10 @@ func (f *Field) FinalCheckByDFS(surroundedBy []int, startX int, startY int, isAr
 		x := xy[0]
 		y := xy[1]
 		for i := 0; i < 8; i ++ {
-			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[surroundedBy[1]][y+dy[i]][x+dx[i]]  {
+			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[enclosedBy[1]][y+dy[i]][x+dx[i]]  {
 				// [1]の内側に[0]があるならこの条件を満たさないﾊｽﾞ。
 				// が、満たしたのだから、仮定が偽
-				return surroundedBy[1]
+				return enclosedBy[1]
 			}
 			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
 				continue
@@ -376,7 +376,7 @@ func (f *Field) FinalCheckByDFS(surroundedBy []int, startX int, startY int, isAr
 		}
 	}
 
-	return surroundedBy[0]
+	return enclosedBy[0]
 }
 
 // IsWallOrSeen は壁の中、もしくは既に見ているマスならtrueを返します
@@ -419,12 +419,12 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 	}
 }
 
-// SurroundedByWoHenkou はセル(x, y)を囲っているチームIDと、実際にどこのセルが囲まれているかを記録して返します
-func (f *Field) SurroundedByWoHenkou(startX int, startY int) ([]int, map[int][][]bool) {
+// EnclosedByWoHenkou はセル(x, y)を囲っているチームIDと、実際にどこのセルが囲まれているかを記録して返します
+func (f *Field) EnclosedByWoHenkou(startX int, startY int) ([]int, map[int][][]bool) {
 	// isAreaBy[ID][Y][X] := 座標 (X, Y) が TeamID による城壁で囲まれたエリアか
 	isAreaBy := map[int][][]bool{}
 	// (x, y) を囲んでいる城壁のteamIDのスライス
-	surroundedBy := []int{}
+	enclosedBy := []int{}
 
 	for _, team := range f.Teams {
 		isAreaBy[team.ID] = make([][]bool, f.Height)
@@ -435,11 +435,11 @@ func (f *Field) SurroundedByWoHenkou(startX int, startY int) ([]int, map[int][][
 		if ok {
 			// team.IDによって(x, y)は囲われている！
 			isAreaBy[team.ID] = seen
-			surroundedBy = append(surroundedBy, team.ID)
+			enclosedBy = append(enclosedBy, team.ID)
 		}
 	}
 
-	return surroundedBy, isAreaBy
+	return enclosedBy, isAreaBy
 }
 
 // CleanUpCellsFormerlyWall は以前は壁だった細胞を片付けます
@@ -459,7 +459,7 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 				continue
 			}
 			// 各チームの城壁で囲まれているかチェック
-			surroundedBy, isAreaBy := f.SurroundedByWoHenkou(x, y)
+			enclosedBy, isAreaBy := f.EnclosedByWoHenkou(x, y)
 
 			var teamID int
 
@@ -467,13 +467,13 @@ func (f *Field) CleanUpCellsFormerlyWall() {
 			// 1チームにしか囲われていないのならそのチームの陣地である。
 			// 2チームともに囲まれているのなら片方の領域内で囲めるかどうかで決める。
 
-			switch len(surroundedBy) {
+			switch len(enclosedBy) {
 			case 0:
 				teamID = 0
 			case 1:
-				teamID = surroundedBy[0]
+				teamID = enclosedBy[0]
 			case 2:
-				teamID = f.FinalCheckByDFS(surroundedBy, x, y, isAreaBy)
+				teamID = f.FinalCheckByDFS(enclosedBy, x, y, isAreaBy)
 			}
 			// 連結成分をすべてtrueにする、上記の通り変更する
 			f.ChangeCellToPositionByDFS(teamID, x, y, &seen)
@@ -584,9 +584,26 @@ func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*apispec.UpdateAction) 
 func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.UpdateAction) (res []bool) {
 	res = make([]bool, len(updateActions))
 
+
 	for index, updateAction := range updateActions {
 		NextX := f.Agents[updateAction.AgentID].X + updateAction.DX
 		NextY := f.Agents[updateAction.AgentID].Y + updateAction.DY
+
+		// AgentIDが存在するか
+		// stay
+			// DX, DYの値は0か
+		// move
+			// DX, DYの値は正常か
+			// 移動先のマスは範囲外でないか
+			// 移動先は敵の城壁でないか
+		// remove
+			// DX, DYの値は正常か
+			// 移動先のマスは範囲外でないか
+			// 移動先は城壁か
+		// put
+			// X, Yの値は範囲外でないか
+			// 移動先は敵の城壁でないか
+			
 
 		if _, ok := f.Agents[updateAction.AgentID]; !ok {
 			// 指定された AgentID は存在しない　想定外　論外
