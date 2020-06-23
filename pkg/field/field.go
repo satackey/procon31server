@@ -594,33 +594,45 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 		// 移動先の座標
 		nextX, nextY := f.CalcAgentDestination(updateAction)
 
-		if updateAction.Type == "stay" {
+		switch updateAction.Type {
+		case "stay":
 			updateAction.DX = 0
 			updateAction.DY = 0
 			updateAction.X = 0
 			updateAction.Y = 0
-		} else if updateAction.Type == "move" {
+		case "move":
 			updateAction.X = 0
 			updateAction.Y = 0
 			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
-			// 移動先のセルは範囲内か(NextX, NextY)
-			// 移動先は敵の城壁か(NextX, NextY, f.Agents[updateAction.AgentID].TeamID)
 			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
 				res[index] = false
 				continue
 			}
-		}
-		
-
-		// remove
+			// 移動先のセルは範囲内か(NextX, NextY)
+			if !f.IsInside(nextX, nextY) {
+				res[index] = false
+				continue
+			}
+			// 移動先は敵の城壁か(NextX, NextY, f.Agents[updateAction.AgentID].TeamID)
+			if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
+				res[index] = false
+				continue
+			}
+		case "remove":
 			// DX, DYの値は正常か
 			// 移動先のセルは範囲内か
 			// 移動先は城壁か(NextX, NextY)
-		// put
+
+		case "put":
 			// 移動先のセルは範囲内か
 			// 移動先は敵の城壁か
-			
-		
+
+		default:
+			// Typeの文字列がおかしい
+			res[index] = false
+		}
+
+
 		if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
 			// DX の値が不正　瞬間移動はできない。
 			res[index] = false
@@ -670,12 +682,23 @@ func (f *Field) CalcAgentDestination(updateAction *apispec.UpdateAction) (x int,
 	return
 }
 
-// IsDXDYValidValue はDXとDYが有効な値であるか判定します
+// IsDXDYValidValue はDXとDYが有効な値であるならtrueを返します
 func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
 	if DX != -1 && DX != 0 && DX != 1 {
 		return false
 	}else if DY != -1 && DY != 0 && DY != 1 {
 		return false
 	}
+	return true
+}
+
+// IsInside はその座標がエリア内ならtrueを返します
+func (f *Field) IsInside(x int, y int) bool {
+	return true
+}
+
+// IsOpponentWall は与えられたセルが自分以外の城壁ならtrueを返します
+// 第3引数は「移動するエージェントのTeamID」である！「敵のTeamID」ではない！！！
+func (f *Field) IsOpponentWall(x int, y int, myTeamID int) bool {
 	return true
 }
