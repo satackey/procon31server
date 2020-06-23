@@ -608,65 +608,84 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 				res[index] = false
 				continue
 			}
-			// 移動先のセルは範囲内か(NextX, NextY)
+			// 移動先のセルは範囲内か(nextX, nextY)
 			if !f.IsInside(nextX, nextY) {
 				res[index] = false
 				continue
 			}
-			// 移動先は敵の城壁か(NextX, NextY, f.Agents[updateAction.AgentID].TeamID)
+			// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
 			if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
 				res[index] = false
 				continue
 			}
 		case "remove":
-			// DX, DYの値は正常か
-			// 移動先のセルは範囲内か
-			// 移動先は城壁か(NextX, NextY)
+			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
+			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
+				res[index] = false
+				continue
+			}
+			// 移動先のセルは範囲内か(nextX, nextY)
+			if !f.IsInside(nextX, nextY) {
+				res[index] = false
+				continue
+			}
+			// 移動先は城壁か(nextX, nextY)
+			if !f.IsWall(nextX, nextY) {
+				res[index] = false
+				continue
+			}
 
 		case "put":
-			// 移動先のセルは範囲内か
-			// 移動先は敵の城壁か
-
+			// 移動先のセルは範囲内か(nextX, nextY)
+			if !f.IsInside(nextX, nextY) {
+				res[index] = false
+				continue
+			}
+			// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
+			if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
+				res[index] = false
+				continue
+			}
 		default:
 			// Typeの文字列がおかしい
 			res[index] = false
 		}
 
 
-		if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
-			// DX の値が不正　瞬間移動はできない。
-			res[index] = false
-			continue
-		} else if updateAction.DY != -1 && updateAction.DY != 0 && updateAction.DY != 1 {
-			// DY の値が不正　瞬間移動はできない。
-			res[index] = false
-			continue
-		} else if NextX < 0 || NextX >= f.Width || NextY < 0 || NextY >= f.Height {
-			// 移動先に指定した場所は範囲外　異世界に飛ぶ気か？
-			res[index] = false
-			continue
-		} else if updateAction.Type == "move" {
-			if f.Cells[NextX][NextY].TiledBy != teamID && f.Cells[NextX][NextY].TiledBy != 0 {
-				// 移動先に指定したセルに敵のタイルがあって動けない！！！
-				res[index] = false
-				continue
-			}
-		} else if updateAction.Type == "remove" {
-			if f.Cells[NextX][NextY].TiledBy == teamID || f.Cells[NextX][NextY].TiledBy == 0 {
-				// 移動先に指定したセルに敵のタイルはない！！！
-				res[index] = false
-				continue
-			}
-		} else if updateAction.Type == "stay" {
-			// "stay" で衝突する場合はないので true
-		} else {
-			// upgateAction.Type の文字列が意味不明　そんなものは存在しない
-			res[index] = false
-			continue
-		}
+		// if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
+		// 	// DX の値が不正　瞬間移動はできない。
+		// 	res[index] = false
+		// 	continue
+		// } else if updateAction.DY != -1 && updateAction.DY != 0 && updateAction.DY != 1 {
+		// 	// DY の値が不正　瞬間移動はできない。
+		// 	res[index] = false
+		// 	continue
+		// } else if NextX < 0 || NextX >= f.Width || NextY < 0 || NextY >= f.Height {
+		// 	// 移動先に指定した場所は範囲外　異世界に飛ぶ気か？
+		// 	res[index] = false
+		// 	continue
+		// } else if updateAction.Type == "move" {
+		// 	if f.Cells[NextX][NextY].TiledBy != teamID && f.Cells[NextX][NextY].TiledBy != 0 {
+		// 		// 移動先に指定したセルに敵のタイルがあって動けない！！！
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// } else if updateAction.Type == "remove" {
+		// 	if f.Cells[NextX][NextY].TiledBy == teamID || f.Cells[NextX][NextY].TiledBy == 0 {
+		// 		// 移動先に指定したセルに敵のタイルはない！！！
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// } else if updateAction.Type == "stay" {
+		// 	// "stay" で衝突する場合はないので true
+		// } else {
+		// 	// upgateAction.Type の文字列が意味不明　そんなものは存在しない
+		// 	res[index] = false
+		// 	continue
+		// }
 
-		// ここまで到達したデータに不正はないので true
-		res[index] = true
+		// // ここまで到達したデータに不正はないので true
+		// res[index] = true
 	}
 	return
 }
@@ -692,7 +711,7 @@ func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
 	return true
 }
 
-// IsInside はその座標がエリア内ならtrueを返します
+// IsInside は与えられた座標がエリア内ならtrueを返します
 func (f *Field) IsInside(x int, y int) bool {
 	return true
 }
@@ -700,5 +719,10 @@ func (f *Field) IsInside(x int, y int) bool {
 // IsOpponentWall は与えられたセルが自分以外の城壁ならtrueを返します
 // 第3引数は「移動するエージェントのTeamID」である！「敵のTeamID」ではない！！！
 func (f *Field) IsOpponentWall(x int, y int, myTeamID int) bool {
+	return true
+}
+
+// IsWall は与えられたセルが城壁ならtrueを返します
+func (f *Field) IsWall(x int, y int) bool {
 	return true
 }
