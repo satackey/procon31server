@@ -2,7 +2,6 @@ package gamemaster
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
 	"testing"
@@ -242,7 +241,8 @@ func TestGetMatch(t *testing.T) {
 }
 
 func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
-	matchStartsAt := time.Now().Add(time.Duration(1) * time.Minute)
+	now := time.Now()
+	matchStartsAt := now.Add(time.Duration(3) * time.Minute)
 	matchID := createMatchFailsIfErr(t, matchStartsAt)
 
 	m, err := GetMatch(matchID)
@@ -251,29 +251,38 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 		return
 	}
 
-	// startatが1599066568 = 2020-09-03 02:09:28
-
-	now := time.Now()
-	sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1, now)
-	if err != nil {
-		t.Fatalf("計算失敗: %s", err)
-		return
+	testCases := []*struct {
+		turn     int
+		expected int
+	}{
+		{
+			turn:     0,
+			expected: int(matchStartsAt.Sub(now)/time.Millisecond) + 150*1000,
+			// 150000
+		},
+		{
+			turn:     1,
+			expected: int(matchStartsAt.Sub(now)/time.Millisecond) + 302*1000,
+			// 150000 + 2000 + 150000 = 302000
+		},
+		{
+			turn:     2,
+			expected: int(matchStartsAt.Sub(now)/time.Millisecond) + 453*1000,
+			// 150000 + 2000 + 150000 + 2000 + 150000= 454000
+		},
 	}
-	// 結果が正しいのかチェック
 
-	expectedTime := matchStartsAt.Add(150 * time.Second).Sub(now)
-	expected := int(expectedTime / time.Millisecond)
-	duration := sum*1000 - expected
-	duration = int(math.Abs(float64(duration)))
-
-	fmt.Printf("%d %d %d \n", sum, expected, duration)
-	if duration > 1000 {
-		// 誤差1000ms以上なら計算失敗
-		t.Log(sum, expected, expectedTime)
-		t.Fatalf("計算失敗: %s", err)
+	for _, testCase := range testCases {
+		result, err := m.GetRemainingMSecToTheTransitionOnTurn(testCase.turn, now)
+		if err != nil {
+			t.Fatalf("計算失敗: turn: %d, err: %s", testCase.turn, err)
+			return
+		}
+		if result != testCase.expected {
+			t.Fatalf("計算失敗: turn: %d, got: %d, want: %d", testCase.turn, result, testCase.expected)
+			return
+		}
 	}
-	// この方法を使うときは -v オプションを付けないと出力されないぞ
-	return
 }
 
 // -count=1 オプションはキャッシュなしでtestしてくれるぞ
@@ -300,6 +309,41 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 // 	}
 // 	return
 // }
+
+func TestGetTurn(t *testing.T) {
+	now := time.Now()
+	matchStartsAt := now.Add(time.Duration(1) * time.Minute)
+	matchID := createMatchFailsIfErr(t, matchStartsAt)
+
+	m, err := GetMatch(matchID)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
+
+	// turn_ms = 150000
+	testtime := matchStartsAt.Add(time.Duration(160) * time.Second)
+	result, err := m.GetTurn(testtime)
+	if err != nil {
+		t.Fatalf("失敗: %s\n", err)
+	}
+	expected := 1
+	if result != expected {
+		t.Fatalf("got: %d, want: %d", result, expected)
+		return
+	}
+
+	testtime = matchStartsAt.Add(time.Duration(400) * time.Second)
+	result, err = m.GetTurn(testtime)
+	if err != nil {
+		t.Fatalf("失敗: %s\n", err)
+	}
+	expected = 2
+	if result != expected {
+		t.Fatalf("got: %d, want: %d", result, expected)
+		return
+	}
+}
 
 func TestPostAgentActions(t *testing.T) {
 	gm := createGameMasterInstanceConnectedDB(t)

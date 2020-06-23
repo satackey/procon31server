@@ -187,82 +187,73 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (
 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
 	}
 
-	var StartsAt int64
-	var TurnMillis, IntervalMillis int
+	var startsAt int64
+	var turnMillis, intervalMillis int
 	for matches.Next() {
-		if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+		if err := matches.Scan(&startsAt, &turnMillis, &intervalMillis); err != nil {
 			return 0, fmt.Errorf("取得に失敗しました: %w", err)
 		}
 	}
-	turnSec := TurnMillis / 1000
-	intervalSec := IntervalMillis / 1000
 
-	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
-
-	endtime := int(StartsAt-atTime.Unix()) + turnSec*n + intervalSec*(n-1)
-	// endtime is sec
+	endtime := int(startsAt-atTime.Unix())*1000 + turnMillis*(n+1) + intervalMillis*n
+	// endtime is Msec
 	return endtime, nil
 }
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
-// func (m *Match) StartAutoTurnUpdate() {
-// 	// sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
-// 	// matches, err := m.DB.Query(sql)
-// 	// if err != nil {
-// 	// 	return 0, fmt.Errorf("取得に失敗しました: %w", err)
-// 	// }
-// 	// var StartsAt, TurnMillis, IntervalMillis int
-// 	// 	for matches.Next() {
-// 	// 	if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
-// 	// 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
-// 	// 	}
-// 	// }
-// 	// startsAtMillis := int64(StartsAt) * 1000
-// 	// n64 := int64(n)
-// 	// // timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
+func (m *Match) StartAutoTurnUpdate() {
+	go func() {
+		for {
+			turn, err := m.GetTurn(time.Now())
+			if err != nil {
+				fmt.Println("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+				return
+			}
 
-// 	go func() {
-// 		// 今何ターン目かを調べる関数がほしい
-// 		startsAtMillis + int64(TurnMillis)*n64
-// 		sum, err := m.GetRemainingMSecToTheTransitionOnTurn(1)
-// 		if err != nil {
-// 			fmt.Println("error:%w", err)
-// 		}
-// 		time.Sleep(time.Duration(sum) * time.Millisecond)
-// 		// 時間を計算する関数を呼び出す
-// 		// endtime秒後に
-// 	}()
-// }
+			result, err := m.GetRemainingMSecToTheTransitionOnTurn(turn, time.Now())
+			if err != nil {
+				fmt.Println("現在のターンの終了時刻までの時間の取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+				return
+			}
+			time.Sleep(time.Duration(result) * time.Millisecond)
+
+			// 途中で AutoTurnUpdate を終了できるようにする
+
+			err = m.UpdateTurn()
+
+			if err != nil {
+				fmt.Println("ターンの更新に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+				return
+			}
+
+			// 最終ターンになったら終わりにする。
+		}
+	}()
+}
 
 // 今のターンを調べる関数
-func (m *Match) GetTurn(n int, atTime time.Time) (int, error) {
-	nowMillis := atTime.Unix() * 1000
-
+func (m *Match) GetTurn(atTime time.Time) (int, error) {
 	sql := fmt.Sprintf("SELECT `start_at`, `turn_ms`, `interval_ms` FROM `matches` WHERE `id` = '%d'", m.id)
 	matches, err := m.DB.Query(sql)
 	if err != nil {
 		return 0, fmt.Errorf("取得に失敗しました: %w", err)
 	}
 
-	var StartsAt, TurnMillis, IntervalMillis int
+	var startsAt int64
+	var turnMillis, intervalMillis int
 	for matches.Next() {
-		if err := matches.Scan(&StartsAt, &TurnMillis, &IntervalMillis); err != nil {
+		if err := matches.Scan(&startsAt, &turnMillis, &intervalMillis); err != nil {
 			return 0, fmt.Errorf("取得に失敗しました: %w", err)
 		}
 	}
 
-	startsAtMillis := int64(StartsAt) * 1000
-	// timeパッケージにはミリ秒が無いので求め、m.StartsAtをミリ秒にする
-
-	// hoge := (startsAtMillis + int64(TurnMillis)*n64 + int64(IntervalMillis)*(n64-1))
-	// startat turmms1 intervalms1 turnms2 intevalms2
-	// 今-(s+1)
-	// 今-(s+1)-2
-	var hoge int
-	var turn int
-	for turn = 1; hoge > 0; turn++ {
-		hoge = int(nowMillis-startsAtMillis) + TurnMillis*n + IntervalMillis*(n-1)
+	if atTime.Unix() < int64(startsAt) {
+		fmt.Printf("atTime.Unix() < int64(startsAt)")
+		return -1, nil
 	}
+
+	// fmt.Printf("%d, %d\n", (int(atTime.Unix()-startsAt) * 1000), (turnMillis + intervalMillis))
+	turn := (int(atTime.Unix()-startsAt) * 1000) / (turnMillis + intervalMillis)
 
 	return turn, nil
 }
