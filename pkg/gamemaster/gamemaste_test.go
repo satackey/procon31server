@@ -267,7 +267,7 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 		},
 		{
 			turn:     2,
-			expected: int(matchStartsAt.Sub(now)/time.Millisecond) + 453*1000,
+			expected: int(matchStartsAt.Sub(now)/time.Millisecond) + 454*1000,
 			// 150000 + 2000 + 150000 + 2000 + 150000= 454000
 		},
 	}
