@@ -581,10 +581,13 @@ func (f *Field) CheckIfAgentsInfoIsValid(updateActions []*apispec.UpdateAction) 
 }
 
 // CheckIfAgentInfoIsValid は行動情報一つ一つが有効か判定します
-func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.UpdateAction) (res []bool) {
+func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (res []bool) {
 	res = make([]bool, len(updateActions))
 
 	for index, updateAction := range updateActions {
+		// 行動情報が正しいものと仮定する
+		res[index] = true
+
 		// AgentIDが存在するか
 		if _, ok := f.Agents[updateAction.AgentID]; !ok {
 			// AgentIDは存在しなかった
@@ -608,8 +611,8 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 				res[index] = false
 				continue
 			}
-			// 移動先のセルは範囲内か(nextX, nextY)
-			if !f.IsInside(nextX, nextY) {
+			// 移動先のセルは範囲外か(nextX, nextY)
+			if f.IsOutsideField(nextX, nextY) {
 				res[index] = false
 				continue
 			}
@@ -619,13 +622,15 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 				continue
 			}
 		case "remove":
+			updateAction.X = 0
+			updateAction.Y = 0
 			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
 			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
 				res[index] = false
 				continue
 			}
-			// 移動先のセルは範囲内か(nextX, nextY)
-			if !f.IsInside(nextX, nextY) {
+			// 移動先のセルは範囲外か(nextX, nextY)
+			if f.IsOutsideField(nextX, nextY) {
 				res[index] = false
 				continue
 			}
@@ -634,10 +639,11 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 				res[index] = false
 				continue
 			}
-
 		case "put":
-			// 移動先のセルは範囲内か(nextX, nextY)
-			if !f.IsInside(nextX, nextY) {
+			updateAction.DX = 0
+			updateAction.DY = 0
+			// 移動先のセルは範囲外か(nextX, nextY)
+			if f.IsOutsideField(nextX, nextY) {
 				res[index] = false
 				continue
 			}
@@ -650,42 +656,6 @@ func (f *Field) CheckIfAgentInfoIsValid(teamID int, updateActions []*apispec.Upd
 			// Typeの文字列がおかしい
 			res[index] = false
 		}
-
-
-		// if updateAction.DX != -1 && updateAction.DX != 0 && updateAction.DX != 1 {
-		// 	// DX の値が不正　瞬間移動はできない。
-		// 	res[index] = false
-		// 	continue
-		// } else if updateAction.DY != -1 && updateAction.DY != 0 && updateAction.DY != 1 {
-		// 	// DY の値が不正　瞬間移動はできない。
-		// 	res[index] = false
-		// 	continue
-		// } else if NextX < 0 || NextX >= f.Width || NextY < 0 || NextY >= f.Height {
-		// 	// 移動先に指定した場所は範囲外　異世界に飛ぶ気か？
-		// 	res[index] = false
-		// 	continue
-		// } else if updateAction.Type == "move" {
-		// 	if f.Cells[NextX][NextY].TiledBy != teamID && f.Cells[NextX][NextY].TiledBy != 0 {
-		// 		// 移動先に指定したセルに敵のタイルがあって動けない！！！
-		// 		res[index] = false
-		// 		continue
-		// 	}
-		// } else if updateAction.Type == "remove" {
-		// 	if f.Cells[NextX][NextY].TiledBy == teamID || f.Cells[NextX][NextY].TiledBy == 0 {
-		// 		// 移動先に指定したセルに敵のタイルはない！！！
-		// 		res[index] = false
-		// 		continue
-		// 	}
-		// } else if updateAction.Type == "stay" {
-		// 	// "stay" で衝突する場合はないので true
-		// } else {
-		// 	// upgateAction.Type の文字列が意味不明　そんなものは存在しない
-		// 	res[index] = false
-		// 	continue
-		// }
-
-		// // ここまで到達したデータに不正はないので true
-		// res[index] = true
 	}
 	return
 }
@@ -711,18 +681,19 @@ func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
 	return true
 }
 
-// IsInside は与えられた座標がエリア内ならtrueを返します
-func (f *Field) IsInside(x int, y int) bool {
-	return true
-}
-
 // IsOpponentWall は与えられたセルが自分以外の城壁ならtrueを返します
 // 第3引数は「移動するエージェントのTeamID」である！「敵のTeamID」ではない！！！
 func (f *Field) IsOpponentWall(x int, y int, myTeamID int) bool {
-	return true
+	if f.Cells[y][x].Status == "wall" && f.Cells[y][x].TiledBy != myTeamID {
+		return true
+	}
+	return false
 }
 
 // IsWall は与えられたセルが城壁ならtrueを返します
 func (f *Field) IsWall(x int, y int) bool {
-	return true
+	if f.Cells[y][x].Status == "wall" {
+		return true
+	}
+	return false
 }

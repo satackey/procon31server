@@ -491,9 +491,9 @@ func TestFinalCheckByDFS(t *testing.T) {
 	expected := []int{4, 4, 3}
 
 	for i := 0; i < 3; i ++ {
-		surroundedBy, isAreaBy := f.SurroundedByWoHenkou(x[i], y[i])
-		if f.FinalCheckByDFS(surroundedBy, x[i], y[i], isAreaBy) != expected[i] {
-			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(surroundedBy, x[i], y[i], isAreaBy), expected[i])
+		enclosedBy, isAreaBy := f.EnclosedByWoHenkou(x[i], y[i])
+		if f.FinalCheckByDFS(enclosedBy, x[i], y[i], isAreaBy) != expected[i] {
+			t.Fatalf("\ni: %d\nf.FinalCheckByDFS(~): %v\nexpected: %v\n", i, f.FinalCheckByDFS(enclosedBy, x[i], y[i], isAreaBy), expected[i])
 		}
 	}
 
