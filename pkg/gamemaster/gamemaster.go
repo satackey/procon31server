@@ -114,7 +114,7 @@ func GetTeam(id string) (*Team, error) {
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int64, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int64, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string, fieldJSON string) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
 		return 0, errors.New("startsAtが今の時刻より前です")
@@ -139,7 +139,7 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int6
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	fieldJSON := "{}"
+	// fieldJSON := "{}"
 
 	sql := fmt.Sprintf("")
 
@@ -215,6 +215,9 @@ func (m *Match) StartAutoTurnUpdate() {
 				fmt.Println("現在のターンの終了時刻までの時間の取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
 				return
 			}
+
+			// Todo: ログを Println する
+			// matchID: ターン3の更新を1, 15 秒後にします
 			time.Sleep(time.Duration(result) * time.Millisecond)
 
 			// 途中で AutoTurnUpdate を終了できるようにする
@@ -226,9 +229,40 @@ func (m *Match) StartAutoTurnUpdate() {
 				return
 			}
 
+			turn, err = m.GetTurn(time.Now())
+			if err != nil {
+				fmt.Println("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+				return
+			}
+
 			// 最終ターンになったら終わりにする。
+			lastTurn, err := m.GetLastTurn()
+			if err != nil {
+				fmt.Println("ターン総数の取得に失敗しました: %w", err)
+				return
+			}
+			if turn == lastTurn {
+				return
+			}
 		}
 	}()
+}
+
+// ターン総数を調べる関数
+func (m *Match) GetLastTurn() (int, error) {
+	sql := fmt.Sprint("SELECT `turn_num` FROM `matches` WHERE `id` = '%d'", m.id)
+	matches, err := m.DB.Query(sql)
+	if err != nil {
+		return -1, fmt.Errorf("取得に失敗しました: %w", err)
+	}
+
+	var turnnum int
+	for matches.Next() {
+		if err := matches.Scan(&turnnum); err != nil {
+			return -1, fmt.Errorf("取得に失敗しました: %w", err)
+		}
+	}
+	return turnnum, nil
 }
 
 // 今のターンを調べる関数
@@ -294,6 +328,26 @@ func (m *Match) UpdateTurn() error {
 
 	// field.ActAgents()
 	// 渡す中身は後で、、
+	return nil
+}
+
+func (m *Match) UpdateTurnkari(Updatefield string) error {
+	sql := fmt.Sprintf("SELECT `field` FROM `matches` WHERE `id` = '%d'", m.id)
+	_, err := m.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("取得に失敗しました: %w", err)
+	}
+
+	uf, err := json.Marshal(Updatefield)
+	if err != nil {
+		return fmt.Errorf("jsonの読み込みに失敗しました: %w", err)
+	}
+
+	sql = fmt.Sprint("UPDATE `matches` SET `field` = '%s' WHERE `matches`.`%d`", uf, m.id)
+	_, err = m.DB.Query(sql)
+	if err != nil {
+		return fmt.Errorf("書き込みに失敗しました: %w", err)
+	}
 	return nil
 }
 
