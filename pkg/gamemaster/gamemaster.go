@@ -139,13 +139,14 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int6
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	// fieldJSON := "{}"
+	fJSON, err := json.Marshal(fieldJSON)
+	if err != nil {
+		return 0, fmt.Errorf("jsonの読み込みに失敗しました: %w", err)
+	}
+	fmt.Printf("%s, %s\n", fieldJSON, fJSON)
 
-	sql := fmt.Sprintf("")
-
-	// creatematch, err := g.DB.QueryRow(sql)
 	stmt, err := g.DB.Prepare("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, ?, ?, ?, ?, ?)")
-	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fieldJSON)
+	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fJSON)
 	if err != nil {
 		return 0, fmt.Errorf("データベースに接続できませんでした1: %w", err)
 	}
@@ -162,7 +163,7 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int6
 	// 	}
 	// }
 
-	sql = fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`, `update_actions`) VALUES ('%d', NULL, '%s', 'null'), ('%d', NULL, '%s', 'null')", matchID, globalTeamID1, matchID, globalTeamID2)
+	sql := fmt.Sprintf("INSERT INTO `match_teams` (`match_id`, `local_team_id`, `global_team_id`, `update_actions`) VALUES ('%d', NULL, '%s', 'null'), ('%d', NULL, '%s', 'null')", matchID, globalTeamID1, matchID, globalTeamID2)
 	_, err = g.DB.Query(sql)
 	if err != nil {
 		// return 0, err // 取得に失敗
@@ -250,7 +251,7 @@ func (m *Match) StartAutoTurnUpdate() {
 
 // ターン総数を調べる関数
 func (m *Match) GetLastTurn() (int, error) {
-	sql := fmt.Sprint("SELECT `turn_num` FROM `matches` WHERE `id` = '%d'", m.id)
+	sql := fmt.Sprintf("SELECT `turn_num` FROM `matches` WHERE `id` = '%d'", m.id)
 	matches, err := m.DB.Query(sql)
 	if err != nil {
 		return -1, fmt.Errorf("取得に失敗しました: %w", err)
@@ -343,7 +344,7 @@ func (m *Match) UpdateTurnkari(Updatefield string) error {
 		return fmt.Errorf("jsonの読み込みに失敗しました: %w", err)
 	}
 
-	sql = fmt.Sprint("UPDATE `matches` SET `field` = '%s' WHERE `matches`.`%d`", uf, m.id)
+	sql = fmt.Sprintf("UPDATE `matches` SET `field` = '%s' WHERE `matches`.`id`= %d", uf, m.id)
 	_, err = m.DB.Query(sql)
 	if err != nil {
 		return fmt.Errorf("書き込みに失敗しました: %w", err)

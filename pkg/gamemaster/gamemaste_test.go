@@ -1,7 +1,6 @@
 package gamemaster
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"testing"
@@ -16,12 +15,12 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	println("after all...")
-	err := deleteAllCreatedMatch()
-	if err != nil {
-		fmt.Println("%w", err)
-		os.Exit(1)
-		return
-	}
+	// err := deleteAllCreatedMatch()
+	// if err != nil {
+	// 	fmt.Println("%w", err)
+	// 	os.Exit(1)
+	// 	return
+	// }
 
 	os.Exit(code)
 }
@@ -151,7 +150,7 @@ func TestCreareMatch(t *testing.T) {
 	createMatchFailsIfErr(t, time.Now())
 
 	startsAt := time.Now().Add(time.Duration(-1) * time.Minute)
-	_, err := createMatchReturnWithErr(t, startsAt, "{}")
+	_, err := createMatchReturnWithErr(t, startsAt)
 	if err.Error() != "startsAtが今の時刻より前です" {
 		t.Fatal(err)
 	}
@@ -159,12 +158,17 @@ func TestCreareMatch(t *testing.T) {
 
 var createdMatchIDs []int = []int{}
 
-func createMatchReturnWithErr(tb testing.TB, startsAt time.Time, fieldJSON string) (int, error) {
+func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
 	gm := createGameMasterInstanceConnectedDB(tb)
 
 	cell := apispec.Cell{
 		Status: "free",
 	}
+	type testfield struct {
+		turn int `json:"field"`
+	}
+
+	fieldJSON := testfield{turn: 0}
 
 	TestCase := apispec.FieldStatus{
 		Width:             2,
@@ -190,8 +194,8 @@ func createMatchReturnWithErr(tb testing.TB, startsAt time.Time, fieldJSON strin
 	return gm.CreateMatch(&TestCase, startsAtSec, 150000, 2000, 15, globalid1, globalid2, fieldJSON)
 }
 
-func createMatchFailsIfErr(tb testing.TB, startsAt time.Time, fieldJSON string) int {
-	matchID, err := createMatchReturnWithErr(tb, startsAt, fieldJSON)
+func createMatchFailsIfErr(tb testing.TB, startsAt time.Time) int {
+	matchID, err := createMatchReturnWithErr(tb, startsAt)
 	if err != nil {
 		tb.Fatalf("マッチ登録 失敗: %s", err)
 		return 0
@@ -377,6 +381,21 @@ func TestPostAgentActions(t *testing.T) {
 
 // func TestUpdateTurnkari(t *testing.T) {
 // 	matchID := createMatchFailsIfErr(t, time.Now())
+
+// 	m, err := GetMatch(matchID)
+// 	if err != nil {
+// 		t.Fatalf("失敗: %s", err)
+// 		return
+// 	}
+
+// 	Testcase := "\"{x:2, y:1}\""
+
+// 	err = m.UpdateTurnkari(Testcase)
+// 	if err != nil {
+// 		t.Fatalf("UpdateTurnkari 失敗: %s", err)
+// 		return
+// 	}
+
 // }
 
 func TestUpdateTurn(t *testing.T) {
