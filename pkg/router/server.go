@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -122,8 +123,13 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 	actions := &apispec.UpdateAction{}
 	// actions := &apispec.Update{}
 	// action.Turns = 9999
-	actions.DX = 9999
-	actions.DY = 9999
+	// actions_len := len(actions)
+	// for i := 0; i < actions_len; i++ {
+	// 	actions[i].DX = 9999
+	// 	actions[i].DY = 9999
+	// }
+	// actions.DX = 9999
+	// actions.DY = 9999
 	err := r.DecodeJsonPayload(&actions)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError) // == 500
@@ -135,36 +141,36 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 
-	if actions.AgentID == 0 {
-		rest.Error(w, "agentid required", 400)
-		return
-	}
-	if actions.DX == 9999 {
-		rest.Error(w, "DX ないぞ", 400)
-		return
-	}
-	if actions.DX < -1 || actions.DX > 1 {
-		rest.Error(w, "DXは-1から1の範囲にしましょう", 400)
-		return
-	}
-	if actions.DY == 9999 {
-		rest.Error(w, "DY ないぞ", 400)
-		return
-	}
-	if actions.DY < -1 || actions.DY > 1 {
-		// rest.Error(w, "dy required", 400)
-		DoubleResponse(w, "invalid", 0, 400)
-		return
-	}
-	// こっちは必要ないかも 必要だった
-	if actions.Type == "" {
-		rest.Error(w, "type ないぞ", 400)
-		return
-	}
-	if actions.Type != "move" || actions.Type != "remove" || actions.Type != "stay" {
-		rest.Error(w, "typeはmoveかremoveかstayで入力しよう", 400)
-		return
-	}
+	// if actions.AgentID == 0 {
+	// 	rest.Error(w, "agentid required", 400)
+	// 	return
+	// }
+	// if actions.DX == 9999 {
+	// 	rest.Error(w, "DX ないぞ", 400)
+	// 	return
+	// }
+	// if actions.DX < -1 || actions.DX > 1 {
+	// 	rest.Error(w, "DXは-1から1の範囲にしましょう", 400)
+	// 	return
+	// }
+	// if actions.DY == 9999 {
+	// 	rest.Error(w, "DY ないぞ", 400)
+	// 	return
+	// }
+	// if actions.DY < -1 || actions.DY > 1 {
+	// 	// rest.Error(w, "dy required", 400)
+	// 	DoubleResponse(w, "invalid", 0, 400)
+	// 	return
+	// }
+	// // こっちは必要ないかも 必要だった
+	// if actions.Type == "" {
+	// 	rest.Error(w, "type ないぞ", 400)
+	// 	return
+	// }
+	// if actions.Type != "move" || actions.Type != "remove" || actions.Type != "stay" {
+	// 	rest.Error(w, "typeはmoveかremoveかstayで入力しよう", 400)
+	// 	return
+	// }
 	// if actions.Turns == 9999 {
 	// 	rest.Error(w, "turns required", 400)
 	// 	return
@@ -173,9 +179,11 @@ func PostAction(w rest.ResponseWriter, r *rest.Request) {
 
 	//辺を越えようとしてきた場合のエラー
 	// 4辺の値 width height を事前情報から引っ張ってくる
+	fmt.Println(actions)
+	w.WriteJson(&actions)
 
-	MyResponse(w, "OK", 202)
-	return
+	// MyResponse(w, "OK", 202)
+	// return
 }
 
 var ActionStore = map[int]*apispec.FieldStatusAction{}
