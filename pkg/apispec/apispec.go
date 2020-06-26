@@ -27,8 +27,8 @@ type FieldStatus struct {
 
 // Cell は セルの情報 を表します
 type Cell struct {
-	Status string 
-	TeamID int    
+	Status string
+	TeamID int
 }
 
 // Team は team情報 を表します

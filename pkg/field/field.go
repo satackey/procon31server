@@ -38,8 +38,146 @@ type AgentActionHistory struct {
 
 // UpdateAction2 は行動情報がどのチームによるものなのかを表します
 type UpdateAction2 struct {
-	*apispec.UpdateAction
 	TeamID int
+}
+
+type UpdateActionWithoutType struct {
+	AgentID int `json:"agentID"`
+}
+
+type UpdateActionAbsoluteOnly struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type UpdateActionAbsolute struct {
+	UpdateActionAbsoluteOnly
+	UpdateActionWithoutType
+}
+
+type UpdateActionRelativeOnly struct {
+	DX int `json:"dx"`
+	DY int `json:"dy"`
+}
+
+type UpdateActionRelative struct {
+	UpdateActionWithoutType
+	UpdateActionRelativeOnly
+}
+
+// UpdateAction は行動情報 を表します
+type UpdateAction struct {
+	UpdateActionWithoutType
+	UpdateActionAbsoluteOnly
+	UpdateActionRelativeOnly
+	Type string `json:"type"`
+}
+
+type UpdateAction3 interface {
+	Act(*Field)
+	GetUpdateAction() *UpdateAction2
+}
+
+type PutUpdateAction struct {
+	UpdateAction2
+	UpdateActionAbsolute
+}
+
+type MoveUpdateAction struct {
+	UpdateAction2
+	UpdateActionRelative
+}
+
+type StayUpdateAction struct {
+	UpdateAction2
+	UpdateActionRelative
+}
+
+type RemoveUpdateAction struct {
+	UpdateAction2
+	UpdateActionRelative
+}
+
+// Act は
+func (p *PutUpdateAction) Act(field *Field) {
+	// 移動先のx, y座標を取得する
+	x := p.X
+	y := p.Y
+	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
+	// newAgentID の決め方を考えよう
+	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
+	newAgentID := 1
+	for {
+		_, keyExist := field.Agents[newAgentID]
+		if !keyExist {
+			break
+		}
+		newAgentID++
+	}
+
+	field.Agents[newAgentID] = &Agent{
+		ID:     newAgentID,
+		TeamID: p.TeamID,
+		X:      x,
+		Y:      y,
+		field:  field,
+	}
+}
+
+// GetUpdateAction は
+func (p *PutUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &p.UpdateAction2
+}
+
+// Act は
+func (m *MoveUpdateAction) Act(field *Field) {
+	// 移動先のx, y座標を取得する
+	x := field.Agents[m.AgentID].X + m.DX
+	y := field.Agents[m.AgentID].Y + m.DY
+	// エージェントの座標を変える
+	field.Agents[m.AgentID].X = x
+	field.Agents[m.AgentID].Y = y
+	// 移動先の座標を自陣の城壁に変える
+	field.Cells[y][x].TiledBy = field.Agents[m.AgentID].TeamID
+	field.Cells[y][x].Status = "wall"
+}
+
+// GetUpdateAction は
+func (m *MoveUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &m.UpdateAction2
+}
+
+// Act は
+func (m *StayUpdateAction) Act(field *Field) {
+	field.ActStay(m.GetUpdateAction())
+}
+
+// GetUpdateAction は
+func (m *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &m.UpdateAction2
+}
+
+// Act は
+func (p *RemoveUpdateAction) Act(field *Field) {
+	// 移動先のx, y座標を取得する
+	x := field.Agents[p.AgentID].X + p.DX
+	y := field.Agents[p.AgentID].Y + p.DY
+	// 城壁 (wall) を除去する、つまりfreeに…
+	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
+	// 後回し！！！！！！！！！！！！！
+
+	// 考察した結果、除去されたセルは仮にfreeとしておき、全ての行動を適用した後にareaになるかどうか計算すればいい！！！
+	// 怪人ジンチー、死亡…😢
+
+	// wallを除去し、freeにする
+	field.Cells[y][x].TiledBy = 0
+	field.Cells[y][x].Status = "free"
+	// field.ActRemove(p.GetUpdateAction())
+}
+
+// GetUpdateAction は
+func (p *RemoveUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &p.UpdateAction2
 }
 
 // New は初期化された Field を返します
@@ -102,15 +240,12 @@ func (f *Field) CalcPoint(teamID int) int {
 }
 
 // MakeUpdateAction2s は updateActions と updateActionIDs をまとめて返します
-func (f *Field) MakeUpdateAction2s(updateActions []*apispec.UpdateAction, updateActionIDs []int) []*UpdateAction2 {
-	updateAction2s := make([]*UpdateAction2, len(updateActions))
-	for i := range updateActions {
-		updateAction2s[i] = &UpdateAction2{
-			TeamID:       updateActionIDs[i],
-			UpdateAction: updateActions[i],
-		}
+func (f *Field) MakeUpdateAction2s(updateActions []*apispec.UpdateAction, updateActionIDs []int) []UpdateAction3 {
+	result := make([]UpdateAction3, len(updateActions))
+	for i, action := range updateActions {
+		result[i] = CreateUpdateAction(action, updateActionIDs[i])
 	}
-	return updateAction2s
+	return result
 }
 
 // RecordCellSelectedAgents は各セルを行動先に選んでいるような行動情報の要素番号を記録します
@@ -200,6 +335,8 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 		Turn:    f.Turn + 1,
 		Apply:   isApplicable,
 	}
+
+	// Todo: Interface を使う
 	if updateAction.Type == "put" {
 		agentActionHistory.X = updateAction.X
 		agentActionHistory.Y = updateAction.Y
@@ -212,48 +349,18 @@ func (f *Field) ConvertIntoHistory(isValid bool, updateAction *apispec.UpdateAct
 }
 
 // ActuallyActAgent は マジで行動情報に基づいてフィールド情報を更新します
-func (f *Field) ActuallyActAgent(updateAction2 *UpdateAction2) {
-	switch updateAction2.Type {
-	case "move":
-		f.ActMove(updateAction2)
-	case "remove":
-		f.ActRemove(updateAction2)
-	case "stay":
-		f.ActStay(updateAction2)
-	case "put":
-		f.ActPut(updateAction2)
-	}
+func (f *Field) ActuallyActAgent(action UpdateAction3) {
+	action.Act(f)
 }
 
 // ActMove は type = "move" のとき ActuallyActAgent により実行されます
 func (f *Field) ActMove(updateAction2 *UpdateAction2) {
-	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction2.AgentID].X + updateAction2.DX
-	y := f.Agents[updateAction2.AgentID].Y + updateAction2.DY
-	// エージェントの座標を変える
-	f.Agents[updateAction2.AgentID].X = x
-	f.Agents[updateAction2.AgentID].Y = y
-	// 移動先の座標を自陣の城壁に変える
-	f.Cells[y][x].TiledBy = f.Agents[updateAction2.AgentID].TeamID
-	f.Cells[y][x].Status = "wall"
 }
 
 // ActRemove は type = "remove" のとき ActuallyActAgent により実行されます
-func (f *Field) ActRemove(updateAction2 *UpdateAction2) {
-	// 移動先のx, y座標を取得する
-	x := f.Agents[updateAction2.AgentID].X + updateAction2.DX
-	y := f.Agents[updateAction2.AgentID].Y + updateAction2.DY
-	// 城壁 (wall) を除去する、つまりfreeに…
-	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
-	// 後回し！！！！！！！！！！！！！
-
-	// 考察した結果、除去されたセルは仮にfreeとしておき、全ての行動を適用した後にareaになるかどうか計算すればいい！！！
-	// 怪人ジンチー、死亡…😢
-
-	// wallを除去し、freeにする
-	f.Cells[y][x].TiledBy = 0
-	f.Cells[y][x].Status = "free"
-}
+// func (f *Field) ActRemove(updateAction2 *UpdateAction2) {
+// 	// RemoveUpdateAction に移動された　ActRemove は無職。
+// }
 
 // ActStay は type = "stay" のとき ActuallyActAgent により実行されます
 func (f *Field) ActStay(updateAction2 *UpdateAction2) {
@@ -263,28 +370,7 @@ func (f *Field) ActStay(updateAction2 *UpdateAction2) {
 
 // ActPut は type = "put" のとき ActuallyActAgent により実行されます
 func (f *Field) ActPut(updateAction2 *UpdateAction2) {
-	// 移動先のx, y座標を取得する
-	x := updateAction2.X
-	y := updateAction2.Y
-	// 配置される新しいエージェントの情報を作り、その情報をフィールドに保存する
-	// newAgentID の決め方を考えよう
-	// newAgentID は 現在存在するIDをインクリメントしていくとき存在してなかったIDにする
-	newAgentID := 1
-	for {
-		_, keyExist := f.Agents[newAgentID]
-		if !keyExist {
-			break
-		}
-		newAgentID++
-	}
 
-	f.Agents[newAgentID] = &Agent{
-		ID:     newAgentID,
-		TeamID: updateAction2.TeamID,
-		X:      x,
-		Y:      y,
-		field:  f,
-	}
 }
 
 // IsOutsideField は与えられた座標がフィールドの外側にあるならtrueを返します
@@ -312,9 +398,9 @@ func (f *Field) IsWallByteamIDOrSeen(x int, y int, teamID int, seen [][]bool) bo
 // CheckAreaByDFS はteamIDの城壁の内部にあるセルを記録して返し、囲われていればtrueを返します
 func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bool) {
 	seen := make([][]bool, f.Height)
-	for i := 0; i < f.Height; i ++ {
+	for i := 0; i < f.Height; i++ {
 		seen[i] = make([]bool, f.Width)
-		for j := 0; j < f.Width; j ++ {
+		for j := 0; j < f.Width; j++ {
 			seen[i][j] = false
 		}
 	}
@@ -327,14 +413,14 @@ func (f *Field) CheckAreaByDFS(teamID int, startX int, startY int) ([][]bool, bo
 		xy := st.Pop().([]int)
 		x := xy[0]
 		y := xy[1]
-		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) {
+		for i := 0; i < 8; i++ {
+			if f.IsOutsideField(x+dx[i], y+dy[i]) {
 				return nil, false
 			}
 			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
 				continue
 			}
-			st.Push([]int{x+dx[i], y+dy[i]})
+			st.Push([]int{x + dx[i], y + dy[i]})
 			seen[y+dy[i]][x+dx[i]] = true
 		}
 	}
@@ -348,9 +434,9 @@ func (f *Field) FinalCheckByDFS(enclosedBy []int, startX int, startY int, isArea
 	dx := []int{1, 1, 0, -1, -1, -1, 0, 1}
 	dy := []int{0, 1, 1, 1, 0, -1, -1, -1}
 	seen := make([][]bool, f.Height)
-	for i := 0; i < f.Height; i ++ {
+	for i := 0; i < f.Height; i++ {
 		seen[i] = make([]bool, f.Width)
-		for j := 0; j < f.Width; j ++ {
+		for j := 0; j < f.Width; j++ {
 			seen[i][j] = false
 		}
 	}
@@ -362,8 +448,8 @@ func (f *Field) FinalCheckByDFS(enclosedBy []int, startX int, startY int, isArea
 		xy := st.Pop().([]int)
 		x := xy[0]
 		y := xy[1]
-		for i := 0; i < 8; i ++ {
-			if  f.IsOutsideField(x + dx[i], y + dy[i]) || !isAreaBy[enclosedBy[1]][y+dy[i]][x+dx[i]]  {
+		for i := 0; i < 8; i++ {
+			if f.IsOutsideField(x+dx[i], y+dy[i]) || !isAreaBy[enclosedBy[1]][y+dy[i]][x+dx[i]] {
 				// [1]の内側に[0]があるならこの条件を満たさないﾊｽﾞ。
 				// が、満たしたのだから、仮定が偽
 				return enclosedBy[1]
@@ -371,7 +457,7 @@ func (f *Field) FinalCheckByDFS(enclosedBy []int, startX int, startY int, isArea
 			if f.IsWallByteamIDOrSeen(x+dx[i], y+dy[i], teamID, seen) {
 				continue
 			}
-			st.Push([]int{x+dx[i], y+dy[i]})
+			st.Push([]int{x + dx[i], y + dy[i]})
 			seen[y+dy[i]][x+dx[i]] = true
 		}
 	}
@@ -408,12 +494,12 @@ func (f *Field) ChangeCellToPositionByDFS(teamID int, startX int, startY int, se
 		if f.Cells[y][x].TiledBy != 0 {
 			f.Cells[y][x].Status = "position"
 		}
-		
-		for i := 0; i < 8; i ++ {
-			if f.IsOutsideField(x + dx[i], y + dy[i]) || f.IsWallOrSeen(x+dx[i], y+dy[i], *seen) {
+
+		for i := 0; i < 8; i++ {
+			if f.IsOutsideField(x+dx[i], y+dy[i]) || f.IsWallOrSeen(x+dx[i], y+dy[i], *seen) {
 				continue
 			}
-			st.Push([]int{x+dx[i], y+dy[i]})
+			st.Push([]int{x + dx[i], y + dy[i]})
 			(*seen)[y+dy[i]][x+dx[i]] = true
 		}
 	}
@@ -428,10 +514,10 @@ func (f *Field) EnclosedByWoHenkou(startX int, startY int) ([]int, map[int][][]b
 
 	for _, team := range f.Teams {
 		isAreaBy[team.ID] = make([][]bool, f.Height)
-		for y := 0; y < f.Height; y ++ {
+		for y := 0; y < f.Height; y++ {
 			isAreaBy[team.ID][y] = make([]bool, f.Width)
 		}
-		seen, ok := f.CheckAreaByDFS(team.ID, startX, startY);
+		seen, ok := f.CheckAreaByDFS(team.ID, startX, startY)
 		if ok {
 			// team.IDによって(x, y)は囲われている！
 			isAreaBy[team.ID] = seen
@@ -675,7 +761,7 @@ func (f *Field) CalcAgentDestination(updateAction *apispec.UpdateAction) (x int,
 func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
 	if DX != -1 && DX != 0 && DX != 1 {
 		return false
-	}else if DY != -1 && DY != 0 && DY != 1 {
+	} else if DY != -1 && DY != 0 && DY != 1 {
 		return false
 	}
 	return true
@@ -696,4 +782,42 @@ func (f *Field) IsWall(x int, y int) bool {
 		return true
 	}
 	return false
+}
+
+func CreateUpdateAction(action *apispec.UpdateAction, teamID int) UpdateAction3 {
+	switch action.Type {
+	case "move":
+		result := &MoveUpdateAction{}
+		result.TeamID = teamID
+		result.DX = action.DX
+		result.DY = action.DY
+		result.AgentID = action.AgentID
+		return result
+
+	case "remove":
+		result := &RemoveUpdateAction{}
+		result.TeamID = teamID
+		result.DX = action.DX
+		result.DY = action.DY
+		result.AgentID = action.AgentID
+		return result
+
+	case "stay":
+		result := &StayUpdateAction{}
+		result.TeamID = teamID
+		result.DX = action.DX
+		result.DY = action.DY
+		result.AgentID = action.AgentID
+		return result
+
+	case "put":
+		result := &PutUpdateAction{}
+		result.TeamID = teamID
+		result.X = action.X
+		result.Y = action.Y
+		result.AgentID = action.AgentID
+		return result
+	}
+
+	return nil
 }
