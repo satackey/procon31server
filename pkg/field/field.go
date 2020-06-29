@@ -76,20 +76,22 @@ type UpdateAction struct {
 type UpdateAction3 interface {
 	Act(*Field)
 	IsValid(*Field) bool
+	CalcAgentDestination(*Field) (int, int)
 	GetUpdateAction() *UpdateAction2
 }
 
+// PutUpdateAction は
 type PutUpdateAction struct {
 	UpdateAction2
 	UpdateActionAbsolute
 }
 
-type MoveUpdateAction struct {
+type StayUpdateAction struct {
 	UpdateAction2
 	UpdateActionRelative
 }
 
-type StayUpdateAction struct {
+type MoveUpdateAction struct {
 	UpdateAction2
 	UpdateActionRelative
 }
@@ -144,6 +146,37 @@ func (p *PutUpdateAction) IsValid(field *Field) bool {
 	return true
 }
 
+// CalcAgentDestination は行動情報が指し示す移動先の座標を返します
+func (p *PutUpdateAction) CalcAgentDestination(field *Field) (int, int) {
+	return p.X, p.Y
+}
+
+// Act は
+func (s *StayUpdateAction) Act(field *Field) {
+	field.ActStay(s.GetUpdateAction())
+}
+
+// GetUpdateAction は
+func (s *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &s.UpdateAction2
+}
+
+// IsValid は
+func (s *StayUpdateAction) IsValid(field *Field) bool {
+	if !field.IsZero(nextX, nextY) {
+		return false
+	}
+
+	return true
+}
+
+// CalcAgentDestination は行動情報が指し示す移動先の座標を返します
+func (s *StayUpdateAction) CalcAgentDestination(field *Field) (int, int) {
+	x := field.Agents[s.AgentID].X + s.DX
+	y := field.Agents[s.AgentID].Y + s.DY
+	return x, y
+}
+
 // Act は
 func (m *MoveUpdateAction) Act(field *Field) {
 	// 移動先のx, y座標を取得する
@@ -180,24 +213,13 @@ func (m *MoveUpdateAction) IsValid(field *Field) bool {
 	return true
 }
 
-// Act は
-func (s *StayUpdateAction) Act(field *Field) {
-	field.ActStay(s.GetUpdateAction())
+// CalcAgentDestination は行動情報が指し示す移動先の座標を返します
+func (m *MoveUpdateAction) CalcAgentDestination(field *Field) (int, int) {
+	x := field.Agents[m.AgentID].X + m.DX
+	y := field.Agents[m.AgentID].Y + m.DY
+	return x, y
 }
 
-// GetUpdateAction は
-func (s *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
-	return &s.UpdateAction2
-}
-
-// IsValid は
-func (s *StayUpdateAction) IsValid(field *Field) bool {
-	if !field.IsZero(nextX, nextY) {
-		return false
-	}
-
-	return true
-}
 
 // Act は
 func (r *RemoveUpdateAction) Act(field *Field) {
@@ -237,6 +259,13 @@ func (r *RemoveUpdateAction) IsValid(field *Field) bool {
 	}
 
 	return true
+}
+
+// CalcAgentDestination は行動情報が指し示す移動先の座標を返します
+func (r *RemoveUpdateAction) CalcAgentDestination(field *Field) (int, int) {
+	x := field.Agents[r.AgentID].X + r.DX
+	y := field.Agents[r.AgentID].Y + r.DY
+	return x, y
 }
 
 // New は初期化された Field を返します
@@ -412,6 +441,18 @@ func (f *Field) ActuallyActAgent(action UpdateAction3) {
 	action.Act(f)
 }
 
+
+// ActPut は type = "put" のとき ActuallyActAgent により実行されます
+func (f *Field) ActPut(updateAction2 *UpdateAction2) {
+
+}
+
+// ActStay は type = "stay" のとき ActuallyActAgent により実行されます
+func (f *Field) ActStay(updateAction2 *UpdateAction2) {
+	// 特に判定することもない
+	// Q.何故関数化した？ A.見栄えがいいから
+}
+
 // ActMove は type = "move" のとき ActuallyActAgent により実行されます
 func (f *Field) ActMove(updateAction2 *UpdateAction2) {
 }
@@ -421,16 +462,8 @@ func (f *Field) ActMove(updateAction2 *UpdateAction2) {
 // 	// RemoveUpdateAction に移動された　ActRemove は無職。
 // }
 
-// ActStay は type = "stay" のとき ActuallyActAgent により実行されます
-func (f *Field) ActStay(updateAction2 *UpdateAction2) {
-	// 特に判定することもない
-	// Q.何故関数化した？ A.見栄えがいいから
-}
 
-// ActPut は type = "put" のとき ActuallyActAgent により実行されます
-func (f *Field) ActPut(updateAction2 *UpdateAction2) {
 
-}
 
 // IsOutsideField は与えられた座標がフィールドの外側にあるならtrueを返します
 func (f *Field) IsOutsideField(x int, y int) bool {
@@ -748,7 +781,7 @@ func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (
 		}
 
 		// 移動先の座標
-		nextX, nextY := f.CalcAgentDestination(updateAction)
+		nextX, nextY := ua.CalcAgentDestination(f)
 
 		// switch updateAction.Type {
 		// case "stay":
@@ -810,7 +843,7 @@ func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (
 		// 	res[index] = false
 		// }
 
-		res[index] = updateActionHoge.IsValid(f)
+		res[index] = ua.IsValid(f)
 
 	}
 	return
@@ -864,22 +897,13 @@ func (f *Field) IsDXDYZero(dx int, dy int) bool {
 
 func CreateUpdateAction(action *apispec.UpdateAction, teamID int) UpdateAction3 {
 	switch action.Type {
-	case "move":
-		result := &MoveUpdateAction{}
+	case "put":
+		result := &PutUpdateAction{}
 		result.TeamID = teamID
-		result.DX = action.DX
-		result.DY = action.DY
+		result.X = action.X
+		result.Y = action.Y
 		result.AgentID = action.AgentID
 		return result
-
-	case "remove":
-		result := &RemoveUpdateAction{}
-		result.TeamID = teamID
-		result.DX = action.DX
-		result.DY = action.DY
-		result.AgentID = action.AgentID
-		return result
-
 	case "stay":
 		result := &StayUpdateAction{}
 		result.TeamID = teamID
@@ -887,12 +911,18 @@ func CreateUpdateAction(action *apispec.UpdateAction, teamID int) UpdateAction3 
 		result.DY = action.DY
 		result.AgentID = action.AgentID
 		return result
-
-	case "put":
-		result := &PutUpdateAction{}
+	case "move":
+		result := &MoveUpdateAction{}
 		result.TeamID = teamID
-		result.X = action.X
-		result.Y = action.Y
+		result.DX = action.DX
+		result.DY = action.DY
+		result.AgentID = action.AgentID
+		return result
+	case "remove":
+		result := &RemoveUpdateAction{}
+		result.TeamID = teamID
+		result.DX = action.DX
+		result.DY = action.DY
 		result.AgentID = action.AgentID
 		return result
 	}
