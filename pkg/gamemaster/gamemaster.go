@@ -114,7 +114,7 @@ func GetTeam(id string) (*Team, error) {
 }
 
 // CreateMatch は 新しい試合を作ります　戻り値 は作られた試合のIDです
-func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int64, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string, fieldJSON string) (int, error) {
+func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int64, turnMillis int, intervalMillis int, turns int, globalTeamID1 string, globalTeamID2 string) (int, error) {
 	now := time.Now()
 	if now.Unix() > int64(startsAt) {
 		return 0, errors.New("startsAtが今の時刻より前です")
@@ -139,11 +139,10 @@ func (g *GameMaster) CreateMatch(fieldStatus *apispec.FieldStatus, startsAt int6
 	}
 	// 渡されたglobalTeamIDたちが存在するかの判定、存在しない場合はその旨をエラーで表す
 
-	fJSON, err := json.Marshal(fieldJSON)
+	fJSON, err := json.Marshal(fieldStatus)
 	if err != nil {
 		return 0, fmt.Errorf("jsonの読み込みに失敗しました: %w", err)
 	}
-	fmt.Printf("%s, %s\n", fieldJSON, fJSON)
 
 	stmt, err := g.DB.Prepare("INSERT INTO `matches` (`id`, `start_at`, `turn_ms`, `interval_ms`, `turn_num`, `field`) VALUES (NULL, ?, ?, ?, ?, ?)")
 	creatematch, err := stmt.Exec(startsAt, turnMillis, intervalMillis, turns, fJSON)
@@ -202,51 +201,44 @@ func (m *Match) GetRemainingMSecToTheTransitionOnTurn(n int, atTime time.Time) (
 }
 
 // StartAutoTurnUpdate は 各ターン終了の時間に点数計算をする
-func (m *Match) StartAutoTurnUpdate() {
-	go func() {
-		for {
-			turn, err := m.GetTurn(time.Now())
-			if err != nil {
-				fmt.Println("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
-				return
-			}
-
-			result, err := m.GetRemainingMSecToTheTransitionOnTurn(turn, time.Now())
-			if err != nil {
-				fmt.Println("現在のターンの終了時刻までの時間の取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
-				return
-			}
-
-			// Todo: ログを Println する
-			// matchID: ターン3の更新を1, 15 秒後にします
-			time.Sleep(time.Duration(result) * time.Millisecond)
-
-			// 途中で AutoTurnUpdate を終了できるようにする
-
-			err = m.UpdateTurn()
-
-			if err != nil {
-				fmt.Println("ターンの更新に失敗しました (AutoTurnUpdate は終了されます): %w", err)
-				return
-			}
-
-			turn, err = m.GetTurn(time.Now())
-			if err != nil {
-				fmt.Println("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
-				return
-			}
-
-			// 最終ターンになったら終わりにする。
-			lastTurn, err := m.GetLastTurn()
-			if err != nil {
-				fmt.Println("ターン総数の取得に失敗しました: %w", err)
-				return
-			}
-			if turn == lastTurn {
-				return
-			}
+func (m *Match) StartAutoTurnUpdate() error {
+	for {
+		turn, err := m.GetTurn(time.Now())
+		if err != nil {
+			return fmt.Errorf("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
 		}
-	}()
+
+		result, err := m.GetRemainingMSecToTheTransitionOnTurn(turn, time.Now())
+		if err != nil {
+			return fmt.Errorf("現在のターンの終了時刻までの時間の取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+		}
+
+		// Todo: ログを Println する
+		// matchID: ターン3の更新を1, 15 秒後にします
+		time.Sleep(time.Duration(result) * time.Millisecond)
+
+		// 途中で AutoTurnUpdate を終了できるようにする
+
+		err = m.UpdateTurn()
+
+		if err != nil {
+			return fmt.Errorf("ターンの更新に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+		}
+
+		turn, err = m.GetTurn(time.Now())
+		if err != nil {
+			return fmt.Errorf("現在のターン数取得に失敗しました (AutoTurnUpdate は終了されます): %w", err)
+		}
+
+		// 最終ターンになったら終わりにする。
+		lastTurn, err := m.GetLastTurn()
+		if err != nil {
+			return fmt.Errorf("ターン総数の取得に失敗しました: %w", err)
+		}
+		if turn == lastTurn {
+			return nil
+		}
+	}
 }
 
 // ターン総数を調べる関数
@@ -304,11 +296,9 @@ func (m *Match) UpdateTurn() error {
 
 	// Team1UpdateActions
 	// Team2UpdateActions
-	fmt.Printf("ぷりん:%d", m.id)
 
 	i := 0
 	for table.Next() || i > 3 {
-		fmt.Printf("ぷりん")
 		var queriedUpdateActions []byte
 		if err := table.Scan(&queriedUpdateActions); err != nil {
 			return fmt.Errorf("情報の抽出に失敗しました: %w", err)
@@ -332,7 +322,7 @@ func (m *Match) UpdateTurn() error {
 	return nil
 }
 
-func (m *Match) UpdateTurnkari(Updatefield string) error {
+func (m *Match) UpdateTurnkari(Updatefield *apispec.FieldStatus) error {
 	sql := fmt.Sprintf("SELECT `field` FROM `matches` WHERE `id` = '%d'", m.id)
 	_, err := m.DB.Query(sql)
 	if err != nil {

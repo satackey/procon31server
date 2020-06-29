@@ -164,11 +164,6 @@ func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
 	cell := apispec.Cell{
 		Status: "free",
 	}
-	type testfield struct {
-		turn int `json:"field"`
-	}
-
-	fieldJSON := testfield{turn: 0}
 
 	TestCase := apispec.FieldStatus{
 		Width:             2,
@@ -181,6 +176,12 @@ func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
 		Actions:           []apispec.FieldStatusAction{},
 	}
 
+	return createMatchFromFieldStatus(tb, startsAt, &TestCase)
+}
+
+func createMatchFromFieldStatus(tb testing.TB, startsAt time.Time, fieldStatus *apispec.FieldStatus) (int, error) {
+	gm := createGameMasterInstanceConnectedDB(tb)
+
 	globalid1, err := registerTeam(tb)
 	if err != nil {
 		return 0, err
@@ -191,7 +192,7 @@ func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
 	}
 
 	startsAtSec := startsAt.UnixNano() / int64(time.Second)
-	return gm.CreateMatch(&TestCase, startsAtSec, 150000, 2000, 15, globalid1, globalid2, fieldJSON)
+	return gm.CreateMatch(fieldStatus, startsAtSec, 150000, 2000, 15, globalid1, globalid2)
 }
 
 func createMatchFailsIfErr(tb testing.TB, startsAt time.Time) int {
@@ -291,28 +292,22 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 
 // -count=1 オプションはキャッシュなしでtestしてくれるぞ
 
-// func TestStartAutoUpdate(t *testing.T) {
-// 	gm := &GameMaster{}
-// 	err := gm.ConnectDB()
-// 	if err != nil {
-// 		t.Fatalf("connect 失敗: %s", err)
-// 		return
-// 	}
+func TestStartAutoTurnUpdate(t *testing.T) {
+	matchID := createMatchFailsIfErr(t, time.Now())
 
-// 	err = gm.ConnectDB()
-// 	if err != nil {
-// 		t.Fatalf("connect 失敗: %s", err)
-// 		return
-// 	}
+	m, err := GetMatch(matchID)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
 
-// 	m := gm.DB
-// 	err = m.StartAutoUpdate()
-// 	if err != nil {
-// 		t.Fatalf("失敗: %s", err)
-// 		return
-// 	}
-// 	return
-// }
+	err = m.StartAutoTurnUpdate()
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
+	return
+}
 
 func TestGetTurn(t *testing.T) {
 	now := time.Now()
@@ -379,24 +374,39 @@ func TestPostAgentActions(t *testing.T) {
 	}
 }
 
-// func TestUpdateTurnkari(t *testing.T) {
-// 	matchID := createMatchFailsIfErr(t, time.Now())
+func TestUpdateTurnkari(t *testing.T) {
+	matchID := createMatchFailsIfErr(t, time.Now())
 
-// 	m, err := GetMatch(matchID)
-// 	if err != nil {
-// 		t.Fatalf("失敗: %s", err)
-// 		return
-// 	}
+	m, err := GetMatch(matchID)
+	if err != nil {
+		t.Fatalf("失敗: %s", err)
+		return
+	}
 
-// 	Testcase := "\"{x:2, y:1}\""
+	cell := apispec.Cell{
+		Status: "free",
+	}
 
-// 	err = m.UpdateTurnkari(Testcase)
-// 	if err != nil {
-// 		t.Fatalf("UpdateTurnkari 失敗: %s", err)
-// 		return
-// 	}
+	UpdateTestCase := apispec.FieldStatus{
+		// Width:             2,
+		// Height:             2,
+		Width:             4,
+		Height:            4,
+		Points:            [][]int{{1, 1}, {1, 1}},
+		StartedAtUnixtime: 0,
+		Turn:              0,
+		Cells:             [][]apispec.Cell{{cell, cell}, {cell, cell}},
+		Teams:             []apispec.Team{},
+		Actions:           []apispec.FieldStatusAction{},
+	}
 
-// }
+	err = m.UpdateTurnkari(&UpdateTestCase)
+	if err != nil {
+		t.Fatalf("UpdateTurnkari 失敗: %s", err)
+		return
+	}
+
+}
 
 func TestUpdateTurn(t *testing.T) {
 	matchID := createMatchFailsIfErr(t, time.Now())
