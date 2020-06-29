@@ -1,6 +1,7 @@
 package gamemaster
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"testing"
@@ -15,13 +16,12 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	println("after all...")
-	// err := deleteAllCreatedMatch()
-	// if err != nil {
-	// 	fmt.Println("%w", err)
-	// 	os.Exit(1)
-	// 	return
-	// }
-
+	err := deleteAllCreatedMatch()
+	if err != nil {
+		fmt.Println("%w", err)
+		os.Exit(1)
+		return
+	}
 	os.Exit(code)
 }
 
@@ -290,22 +290,22 @@ func TestGetRemainingMSecToTheTransitionOnTurn(t *testing.T) {
 
 // -count=1 オプションはキャッシュなしでtestしてくれるぞ
 
-func TestStartAutoTurnUpdate(t *testing.T) {
-	matchID := createMatchFailsIfErr(t, time.Now())
+// func TestStartAutoTurnUpdate(t *testing.T) {
+// 	matchID := createMatchFailsIfErr(t, time.Now())
 
-	m, err := GetMatch(matchID)
-	if err != nil {
-		t.Fatalf("失敗: %s", err)
-		return
-	}
+// 	m, err := GetMatch(matchID)
+// 	if err != nil {
+// 		t.Fatalf("失敗: %s", err)
+// 		return
+// 	}
 
-	err = m.StartAutoTurnUpdate()
-	if err != nil {
-		t.Fatalf("失敗: %s", err)
-		return
-	}
-	return
-}
+// 	err = m.StartAutoTurnUpdate()
+// 	if err != nil {
+// 		t.Fatalf("失敗: %s", err)
+// 		return
+// 	}
+// 	return
+// }
 
 func TestGetTurn(t *testing.T) {
 	now := time.Now()
