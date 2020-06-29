@@ -193,34 +193,34 @@ func (f *Field) ActAgentsWithSaving(IsValid []bool, updateActions []*apispec.Upd
 	// もうやったのでIsValidは信用していいデータらしい。
 
 	// セルが行動先に選ばれた回数をカウントします
-	var DistinationCount [][]int
-	for i, updateAction := range updateActions {
-		if IsValid[i] == true {
-			x := f.Agents[updateAction.AgentID].X + updateAction.DX
-			y := f.Agents[updateAction.AgentID].Y + updateAction.DY
-			DistinationCount[x][y]++
-		}
-	}
-	// セルに保存された回数が1回なら、実行できます(Apply:1)
-	// Apply := 1
-	for i, updateAction := range updateActions {
-		if IsValid[i] == false {
-			var slise []AgentActionHistory
-			f.ActionHistories[i].AgentActionHistories = append(f.ActionHistories[i].AgentActionHistories, slise...) // sliseの中身を追加する
-			// Apply = -1
-			// f.Turn
-			continue
-		}
-		x := f.Agents[updateAction.AgentID].X + updateAction.DX
-		y := f.Agents[updateAction.AgentID].Y + updateAction.DY
-		if DistinationCount[x][y] == 1 {
-			// 動ける、動かす
-			// Apply = 1
-		} else {
-			// 競合して動けない、stayにする
-			// Apply = 0
-		}
-	}
+	// var DistinationCount [][]int
+	// for i, updateAction := range updateActions {
+	// 	if IsValid[i] == true {
+	// 		x := f.Agents[updateAction.AgentID].X + updateAction.DX
+	// 		y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+	// 		DistinationCount[x][y]++
+	// 	}
+	// }
+	// // セルに保存された回数が1回なら、実行できます(Apply:1)
+	// // Apply := 1
+	// for i, updateAction := range updateActions {
+	// 	if IsValid[i] == false {
+	// 		var slise []AgentActionHistory
+	// 		f.ActionHistories[i].AgentActionHistories = append(f.ActionHistories[i].AgentActionHistories, slise...) // sliseの中身を追加する
+	// 		// Apply = -1
+	// 		// f.Turn
+	// 		continue
+	// 	}
+	// 	x := f.Agents[updateAction.AgentID].X + updateAction.DX
+	// 	y := f.Agents[updateAction.AgentID].Y + updateAction.DY
+	// 	if DistinationCount[x][y] == 1 {
+	// 		// 動ける、動かす
+	// 		Apply = 1
+	// 	} else {
+	// 		// 競合して動けない、stayにする
+	// 		Apply = 0
+	// 	}
+	// }
 }
 
 // ActAgents はエージェントの行動を指定し、フィールドを変更します。
