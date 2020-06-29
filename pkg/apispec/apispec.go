@@ -1,7 +1,7 @@
 package apispec
 
 // Matches は 事前情報 の集まりです
-type Matches []Match
+type Matches []*Match
 
 // Match は 事前情報 を表します
 type Match struct {

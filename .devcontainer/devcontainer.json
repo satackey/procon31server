@@ -1,9 +1,9 @@
 {
-	"name": "Go",
+	"name": "procon31server",
 	"dockerComposeFile": [
-		"docker-compose.yml"
+		"../docker-compose.yml"
 	],
-	"service": "procon30",
+	"service": "procon31server",
 	"workspaceFolder": "/go/src/github.com/satackey/procon31server",
 	"settings": {
 		"terminal.integrated.shell.linux": null,
