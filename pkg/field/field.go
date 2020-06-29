@@ -75,6 +75,7 @@ type UpdateAction struct {
 
 type UpdateAction3 interface {
 	Act(*Field)
+	IsValid(*Field) bool
 	GetUpdateAction() *UpdateAction2
 }
 
@@ -129,6 +130,20 @@ func (p *PutUpdateAction) GetUpdateAction() *UpdateAction2 {
 	return &p.UpdateAction2
 }
 
+// IsValid は
+func (p *PutUpdateAction) IsValid(field *Field) bool {
+	// 移動先のセルは範囲外か(nextX, nextY)
+	if field.IsOutsideField(nextX, nextY) {
+		return false
+	}
+	// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
+	if field.IsOpponentWall(nextX, nextY, field.Agents[p.AgentID].TeamID) {
+		return false
+	}
+
+	return true
+}
+
 // Act は
 func (m *MoveUpdateAction) Act(field *Field) {
 	// 移動先のx, y座標を取得する
@@ -147,21 +162,48 @@ func (m *MoveUpdateAction) GetUpdateAction() *UpdateAction2 {
 	return &m.UpdateAction2
 }
 
+// IsValid は
+func (m *MoveUpdateAction) IsValid(field *Field) bool {
+	// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
+	if !field.IsDXDYValidValue(m.DX, m.DY) {
+		return false
+	}
+	// 移動先のセルは範囲外か(nextX, nextY)
+	if field.IsOutsideField(nextX, nextY) {
+		return false
+	}
+	// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
+	if field.IsOpponentWall(nextX, nextY, field.Agents[m.AgentID].TeamID) {
+		return false
+	}
+
+	return true
+}
+
 // Act は
-func (m *StayUpdateAction) Act(field *Field) {
-	field.ActStay(m.GetUpdateAction())
+func (s *StayUpdateAction) Act(field *Field) {
+	field.ActStay(s.GetUpdateAction())
 }
 
 // GetUpdateAction は
-func (m *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
-	return &m.UpdateAction2
+func (s *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &s.UpdateAction2
+}
+
+// IsValid は
+func (s *StayUpdateAction) IsValid(field *Field) bool {
+	if !field.IsZero(nextX, nextY) {
+		return false
+	}
+
+	return true
 }
 
 // Act は
-func (p *RemoveUpdateAction) Act(field *Field) {
+func (r *RemoveUpdateAction) Act(field *Field) {
 	// 移動先のx, y座標を取得する
-	x := field.Agents[p.AgentID].X + p.DX
-	y := field.Agents[p.AgentID].Y + p.DY
+	x := field.Agents[r.AgentID].X + r.DX
+	y := field.Agents[r.AgentID].Y + r.DY
 	// 城壁 (wall) を除去する、つまりfreeに…
 	// そうはいかないわ！私は怪人ジンチー。除去されたセルが囲われている場合、陣地にするわ！
 	// 後回し！！！！！！！！！！！！！
@@ -176,8 +218,25 @@ func (p *RemoveUpdateAction) Act(field *Field) {
 }
 
 // GetUpdateAction は
-func (p *RemoveUpdateAction) GetUpdateAction() *UpdateAction2 {
-	return &p.UpdateAction2
+func (r *RemoveUpdateAction) GetUpdateAction() *UpdateAction2 {
+	return &r.UpdateAction2
+}
+
+// IsValid は
+func (r *RemoveUpdateAction) IsValid(field *Field) bool {
+	if !field.IsDXDYValidValue(r.DX, r.DY) {
+		return false
+	}
+	// 移動先のセルは範囲外か(nextX, nextY)
+	if field.IsOutsideField(nextX, nextY) {
+		return false
+	}
+	// 移動先は城壁か(nextX, nextY)
+	if !field.IsWall(nextX, nextY) {
+		return false
+	}
+
+	return true
 }
 
 // New は初期化された Field を返します
@@ -680,68 +739,79 @@ func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (
 			res[index] = false
 			continue
 		}
+
+		ua := CreateUpdateAction(updateAction, f.Agents[updateAction.AgentID].TeamID)
+		if ua == nil {
+			// Typeの文字列が不正
+			res[index] = false
+			continue
+		}
+
 		// 移動先の座標
 		nextX, nextY := f.CalcAgentDestination(updateAction)
 
-		switch updateAction.Type {
-		case "stay":
-			updateAction.DX = 0
-			updateAction.DY = 0
-			updateAction.X = 0
-			updateAction.Y = 0
-		case "move":
-			updateAction.X = 0
-			updateAction.Y = 0
-			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
-			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
-				res[index] = false
-				continue
-			}
-			// 移動先のセルは範囲外か(nextX, nextY)
-			if f.IsOutsideField(nextX, nextY) {
-				res[index] = false
-				continue
-			}
-			// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
-			if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
-				res[index] = false
-				continue
-			}
-		case "remove":
-			updateAction.X = 0
-			updateAction.Y = 0
-			// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
-			if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
-				res[index] = false
-				continue
-			}
-			// 移動先のセルは範囲外か(nextX, nextY)
-			if f.IsOutsideField(nextX, nextY) {
-				res[index] = false
-				continue
-			}
-			// 移動先は城壁か(nextX, nextY)
-			if !f.IsWall(nextX, nextY) {
-				res[index] = false
-				continue
-			}
-		case "put":
-			updateAction.DX = 0
-			updateAction.DY = 0
-			// 移動先のセルは範囲外か(nextX, nextY)
-			if f.IsOutsideField(nextX, nextY) {
-				res[index] = false
-				continue
-			}
-			// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
-			if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
-				res[index] = false
-				continue
-			}
-		default:
-			// Typeの文字列がおかしい
-			res[index] = false
-		}
+		// switch updateAction.Type {
+		// case "stay":
+		// 	updateAction.DX = 0
+		// 	updateAction.DY = 0
+		// 	updateAction.X = 0
+		// 	updateAction.Y = 0
+		// case "move":
+		// 	updateAction.X = 0
+		// 	updateAction.Y = 0
+		// 	// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
+		// 	if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// 	// 移動先のセルは範囲外か(nextX, nextY)
+		// 	if f.IsOutsideField(nextX, nextY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// 	// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
+		// 	if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// case "remove":
+		// 	updateAction.X = 0
+		// 	updateAction.Y = 0
+		// 	// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
+		// 	if !f.IsDXDYValidValue(updateAction.DX, updateAction.DY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// 	// 移動先のセルは範囲外か(nextX, nextY)
+		// 	if f.IsOutsideField(nextX, nextY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// 	// 移動先は城壁か(nextX, nextY)
+		// 	if !f.IsWall(nextX, nextY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// case "put":
+		// 	updateAction.DX = 0
+		// 	updateAction.DY = 0
+		// 	// 移動先のセルは範囲外か(nextX, nextY)
+		// 	if f.IsOutsideField(nextX, nextY) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// 	// 移動先は敵の城壁か(nextX, nextY, f.Agents[updateAction.AgentID].TeamID)
+		// 	if f.IsOpponentWall(nextX, nextY, f.Agents[updateAction.AgentID].TeamID) {
+		// 		res[index] = false
+		// 		continue
+		// 	}
+		// default:
+		// 	// Typeの文字列がおかしい
+		// 	res[index] = false
+		// }
+
+		res[index] = updateActionHoge.IsValid(f)
+
 	}
 	return
 }
@@ -768,7 +838,7 @@ func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
 }
 
 // IsOpponentWall は与えられたセルが自分以外の城壁ならtrueを返します
-// 第3引数は「移動するエージェントのTeamID」である！「敵のTeamID」ではない！！！
+// 第3引数は「移動するエージェント自身のTeamID」である！「敵のTeamID」ではない！！！
 func (f *Field) IsOpponentWall(x int, y int, myTeamID int) bool {
 	if f.Cells[y][x].Status == "wall" && f.Cells[y][x].TiledBy != myTeamID {
 		return true
@@ -779,6 +849,14 @@ func (f *Field) IsOpponentWall(x int, y int, myTeamID int) bool {
 // IsWall は与えられたセルが城壁ならtrueを返します
 func (f *Field) IsWall(x int, y int) bool {
 	if f.Cells[y][x].Status == "wall" {
+		return true
+	}
+	return false
+}
+
+// IsDXDYZero はDXDYが0であるならtrueを返します
+func (f *Field) IsDXDYZero(dx int, dy int) bool {
+	if dx == 0 && dy == 0 {
 		return true
 	}
 	return false
