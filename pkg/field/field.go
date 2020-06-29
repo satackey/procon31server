@@ -134,6 +134,7 @@ func (p *PutUpdateAction) GetUpdateAction() *UpdateAction2 {
 
 // IsValid は
 func (p *PutUpdateAction) IsValid(field *Field) bool {
+	nextX, nextY := p.CalcAgentDestination(field)
 	// 移動先のセルは範囲外か(nextX, nextY)
 	if field.IsOutsideField(nextX, nextY) {
 		return false
@@ -163,7 +164,7 @@ func (s *StayUpdateAction) GetUpdateAction() *UpdateAction2 {
 
 // IsValid は
 func (s *StayUpdateAction) IsValid(field *Field) bool {
-	if !field.IsZero(nextX, nextY) {
+	if !field.IsDXDYZero(s.DX, s.DY) {
 		return false
 	}
 
@@ -197,6 +198,7 @@ func (m *MoveUpdateAction) GetUpdateAction() *UpdateAction2 {
 
 // IsValid は
 func (m *MoveUpdateAction) IsValid(field *Field) bool {
+	nextX, nextY := m.CalcAgentDestination(field)
 	// DX, DYの値は正常か(updateAction.DX, updateAction.DY)
 	if !field.IsDXDYValidValue(m.DX, m.DY) {
 		return false
@@ -246,6 +248,7 @@ func (r *RemoveUpdateAction) GetUpdateAction() *UpdateAction2 {
 
 // IsValid は
 func (r *RemoveUpdateAction) IsValid(field *Field) bool {
+	nextX, nextY := r.CalcAgentDestination(field)
 	if !field.IsDXDYValidValue(r.DX, r.DY) {
 		return false
 	}
@@ -781,7 +784,7 @@ func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (
 		}
 
 		// 移動先の座標
-		nextX, nextY := ua.CalcAgentDestination(f)
+		// nextX, nextY := ua.CalcAgentDestination(f)
 
 		// switch updateAction.Type {
 		// case "stay":
@@ -850,15 +853,15 @@ func (f *Field) CheckIfAgentInfoIsValid(updateActions []*apispec.UpdateAction) (
 }
 
 // CalcAgentDestination は行動情報が指し示す移動先の座標を返します
-func (f *Field) CalcAgentDestination(updateAction *apispec.UpdateAction) (x int, y int) {
-	x = f.Agents[updateAction.AgentID].X + updateAction.DX
-	y = f.Agents[updateAction.AgentID].Y + updateAction.DY
-	if updateAction.Type == "put" {
-		x = updateAction.X
-		y = updateAction.Y
-	}
-	return
-}
+// func (f *Field) CalcAgentDestination(updateAction *apispec.UpdateAction) (x int, y int) {
+// 	x = f.Agents[updateAction.AgentID].X + updateAction.DX
+// 	y = f.Agents[updateAction.AgentID].Y + updateAction.DY
+// 	if updateAction.Type == "put" {
+// 		x = updateAction.X
+// 		y = updateAction.Y
+// 	}
+// 	return
+// }
 
 // IsDXDYValidValue はDXとDYが有効な値であるならtrueを返します
 func (f *Field) IsDXDYValidValue(DX int, DY int) bool {
