@@ -159,8 +159,6 @@ func TestCreareMatch(t *testing.T) {
 var createdMatchIDs []int = []int{}
 
 func createMatchReturnWithErr(tb testing.TB, startsAt time.Time) (int, error) {
-	gm := createGameMasterInstanceConnectedDB(tb)
-
 	cell := apispec.Cell{
 		Status: "free",
 	}
